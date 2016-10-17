@@ -2,7 +2,7 @@ let max_n = 5            (* Max number of aircraft *)
 let lag = 30.            (* Time lag before pilot action *)
 let speedup = 1.         (* Initial time acceleration *)
 let scale = 10.          (* Initial scale (pixels / Nm) *)
-let size = 800.          (* Initial window size (pixels) *)
+let size = 600.          (* Initial window size (pixels) *)
 let mode = 2             (* Initial mode: Basic, Static, Dynamic *)
 
 
@@ -126,6 +126,10 @@ let draw_acft state =
     (* Speed vector *)
     ignore (Canvas.create_line ~xys:[xy; cv_xy state next_pos]
 	      ~fill:color ~width:2 ~tags:tags state.cv);
+   (* Label *)
+     ignore (Canvas.create_text ~x:(x+10) ~y:(y-10)
+	    ~text:"Text"
+	    ~fill:scale_color ~anchor:`Nw ~tags:tags state.cv);
     (* Comet *)
     Array.iteri (fun j xyj ->
       let (x, y) = cv_xy state xyj and d = 4 - j in
