@@ -21,6 +21,7 @@ let degrees = 180. /. pi
 
 let angle (x, y) = atan2 y x
 
+(*polaire*)
 let polar a = (cos a, sin a)
 
 let mod_twopi a =
