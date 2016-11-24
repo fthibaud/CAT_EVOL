@@ -231,6 +231,7 @@ let detect acft1 acft2 =
   let vsep = dspeed *. (acft1.speed +. acft2.speed) /. hour in
   let pred1 = acft1.predict and pred2 = acft2.predict in
   let rec detect leg1 orig1 leg2 orig2 t sep_t =
+   if acft1.flightlvl = acft2.flightlvl then (
     if leg1 < Array.length pred1 && leg2 < Array.length pred2 then (
       let t1 = fst pred1.(leg1) and t2 = fst pred2.(leg2) in
       let next_t = min t1 t2 in
@@ -249,7 +250,7 @@ let detect acft1 acft2 =
 	first_t := min !first_t (t +. t1 *. (next_t -. t) -. fst pred1.(0));
 	segs1 := seg1:: !segs1;
 	segs2 := seg2:: !segs2)
-	(seg_detect orig1 dest1 orig2 dest2 sep_t (next_sep -. sep_t))) in
+	(seg_detect orig1 dest1 orig2 dest2 sep_t (next_sep -. sep_t)))) in
   if fst pred1.(0) <> fst pred2.(0) then
     Printf.printf "detect: %f <> %f\n%!" (fst pred1.(0)) (fst pred2.(0));
   detect 1 (snd pred1.(0)) 1 (snd (pred2.(0))) (fst pred1.(0)) sep;
