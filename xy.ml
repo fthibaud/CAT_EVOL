@@ -1,37 +1,47 @@
 (* Float coords 2D --------------------------------------------------------- *)
 
+(* Type of a point or a vector *)
 type t = float * float
 
-let mul k (x, y) = (k *. x, k *. y)
-let add (x1, y1) (x2, y2) = (x1 +. x2, y1 +. y2)
-let sub (x1, y1) (x2, y2) = (x1 -. x2, y1 -. y2)
-let sca (x1, y1) (x2, y2) = x1 *. x2 +. y1 *. y2
-let det (x1, y1) (x2, y2) = x1 *. y2 -. y1 *. x2
+(* Basic operations on points/vectors *)
+let mul k (x, y) = (k *. x, k *. y) (* Multiplication of coordinates by a scalar number*)
+let add (x1, y1) (x2, y2) = (x1 +. x2, y1 +. y2) (* Addition coordinate to coordinate *)
+let sub (x1, y1) (x2, y2) = (x1 -. x2, y1 -. y2) (* Substraction coordinate to coordinate *)
+let sca (x1, y1) (x2, y2) = x1 *. x2 +. y1 *. y2 (* Scalar product *)
+let det (x1, y1) (x2, y2) = x1 *. y2 -. y1 *. x2 (* determinant *)
 
-let norm2 v = sca v v
-let norm v = sqrt (norm2 v)
+(* Euclidian Norm *)
+let norm2 v = sca v v (* Norm² *)
+let norm v = sqrt (norm2 v) (* Norm *)
 
+(* Barycentre of two points *)
 let bary (t1, xy1) (t2, xy2) t =
   add xy1 (mul ((t -. t1) /.(t2 -. t1)) (sub xy2 xy1))
 
-let pi = atan2 0. (-1.)
-let twopi = 2. *. pi
-let radians = pi /. 180.
-let degrees = 180. /. pi
+(* Conversions between angles *)
+let pi = atan2 0. (-1.) (* definition of pi *)
+let twopi = 2. *. pi (* definition of 2*pi *)
+let radians = pi /. 180. (* rate to convert degrees into radians *)
+let degrees = 180. /. pi (* rate to convert radians into degrees *)
 
+(* Arctan of y/x, gives theta angle for polar conversion *)
 let angle (x, y) = atan2 y x
 
-(*polaire*)
+(*Polar coordinates*)
 let polar a = (cos a, sin a)
 
+(*modulo 2 Pi*)		
 let mod_twopi a =
   let b = mod_float a twopi in
   if pi <= b then b -. twopi else if b < -.pi then b +. twopi else b
 
+(*Angle addition*)						     
 let add_angle a1 a2 = mod_twopi (a1 +. a2)
 
+(*Angle substraction*)				
 let sub_angle a1 a2 = mod_twopi (a1 -. a2)
 
+(*Distance between two segments*)
 let dist_seg_seg (a, b) (c, d) =
   let dseg ap ab = (* distance (p, [ab]) *)
     let bp = sub ap ab in
