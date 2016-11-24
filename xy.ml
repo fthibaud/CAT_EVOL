@@ -58,3 +58,4 @@ let dist_seg_seg (a, b) (c, d) =
   if ckw ab ac * ckw ab ad <= 0 && ckw cd ca * ckw cd cb <= 0 then 0.
   else min (min (dseg ca cd) (dseg cb cd)) (min (dseg ac ab) (dseg ad ab))
 
+(*test*)
