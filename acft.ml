@@ -27,7 +27,12 @@ type t = {
   mutable leg: int;                 (* Current leg in flightplan *)
   mutable predict: pln;             (* Prediction *)
   mutable route: Xy.t array;        (* Positions every delta sec. *)
+  (*//////////////////////////////////////////////////////////////*)
+  mutable flightlvl: int;	    (* FL de l'avion *)
+  (*//////////////////////////////////////////////////////////////*)
 }
+
+
 
 let pln_to_string pln =
   String.concat " " (Array.to_list (Array.map (fun (t, (x, y)) ->
@@ -263,8 +268,15 @@ let roundabout size n =
     let t = Random.float max_start_t in
     (* let t = 0. in *)
     let pln = create_pln speed dspeed t xys in
+(*//////////////////////////////////////////////////////////////*)
+    let flightlvl = (10*(8+(Random.int 15))) in						(*Attribue un FL aléatoire entre FL80 et FL220*)
+(*//////////////////////////////////////////////////////////////*)
     let route = create_route pln in
-    let a = {speed=speed; pln=pln; leg=0; predict=[||]; route=route} in
+    let a = {speed=speed; pln=pln; leg=0; predict=[||]; route=route;   
+(*//////////////////////////////////////////////////////////////*)
+    flightlvl = flightlvl;  
+(*//////////////////////////////////////////////////////////////*)
+    } in
     update a 0.;
     a in
   let rec first_conf_t a i j =

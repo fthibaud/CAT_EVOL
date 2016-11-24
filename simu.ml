@@ -128,7 +128,10 @@ let draw_acft state =
 	      ~fill:color ~width:2 ~tags:tags state.cv);
    (* Label *)
      ignore (Canvas.create_text ~x:(x+10) ~y:(y-10)
-	    ~text:"Text"
+(*////////////////////////////////////////////////////////////*)
+	    (*~text: (String.concat " " ["FL"; (string_of_int acft.flightlvl) ])*)
+	    ~text: (String.concat " " ["FL"; (string_of_int acft.flightlvl) ])
+(*////////////////////////////////////////////////////////////*)
 	    ~fill:scale_color ~anchor:`Nw ~tags:tags state.cv);
     (* Comet *)
     Array.iteri (fun j xyj ->
@@ -338,6 +341,9 @@ let main =
   bind [`ButtonReleaseDetail 1] [] (apply_edit state) state.cv;
   bind [`ButtonPressDetail 3] [] (fun _ -> cancel_edit state) state.cv;
   bind [`ButtonPressDetail 5] [] (scroll state) top;
+ 
+
+ 
   Focus.set state.cv;
 
   (* Go *)

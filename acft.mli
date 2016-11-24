@@ -10,6 +10,9 @@ type t = {  (* Aircraft *)
   mutable leg: int;          (* Current leg in the flight plan *)
   mutable predict: pln;      (* Prediction *)
   mutable route: Xy.t array; (* Positions every delta sec. *)
+  (*//////////////////////////////////////////////////////////////*)
+  mutable flightlvl: int;	    (* FL de l'avion *)
+  (*//////////////////////////////////////////////////////////////*)
 }
 
 val delta: time           (* trace time steps (sec) *)
@@ -22,7 +25,6 @@ val sep: float            (* minimal separation (Nm) *)
 
 val pln_to_string: pln -> string
 val pln_of_string: string -> pln
-
 val create_pln: speed -> float -> time -> Xy.t array -> pln
 val create_route: pln -> Xy.t array
 
