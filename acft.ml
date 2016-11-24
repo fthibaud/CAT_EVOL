@@ -183,9 +183,10 @@ let pos_detect acft =
   let conf = Array.map (fun _ -> false) acft in
   Array.iteri (fun i acfti ->
     for j = 0 to i - 1 do
+	if acfti.flightlvl = acft.(j).flightlvl then (
       if Xy.norm2 (Xy.sub (get_pos acfti) (get_pos acft.(j))) < sep2 then (
 	conf.(i) <- true;
-	conf.(j) <- true)
+	conf.(j) <- true))
     done) acft;
   conf
 
@@ -228,10 +229,11 @@ let seg_detect orig1 dest1 orig2 dest2 sep dsep =
 
 let detect acft1 acft2 =
   let first_t = ref max_float and segs1 = ref [] and segs2 = ref [] in
+	 
   let vsep = dspeed *. (acft1.speed +. acft2.speed) /. hour in
   let pred1 = acft1.predict and pred2 = acft2.predict in
   let rec detect leg1 orig1 leg2 orig2 t sep_t =
-   if acft1.flightlvl = acft2.flightlvl then (
+  if (acft1.flightlvl = acft2.flightlvl) then (
     if leg1 < Array.length pred1 && leg2 < Array.length pred2 then (
       let t1 = fst pred1.(leg1) and t2 = fst pred2.(leg2) in
       let next_t = min t1 t2 in
@@ -270,7 +272,7 @@ let roundabout size n =
     (* let t = 0. in *)
     let pln = create_pln speed dspeed t xys in
 (*//////////////////////////////////////////////////////////////*)
-    let flightlvl = (10*(8+(Random.int 15))) in						(*Attribue un FL aléatoire entre FL80 et FL220*)
+    let flightlvl = (10*(8+(Random.int 5))) in						(*Attribue un FL aléatoire entre FL80 et FL120*)
 (*//////////////////////////////////////////////////////////////*)
     let route = create_route pln in
     let a = {speed=speed; pln=pln; leg=0; predict=[||]; route=route;   
