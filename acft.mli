@@ -5,15 +5,15 @@ type pln = (time * Xy.t) array  (* Flight plan *)
 
 
 type t = {  (* Aircraft *)
-  speed: speed;              (* Nominal speed *)
-  mutable pln: pln;          (* Real flightplan *)
-  mutable leg: int;          (* Current leg in the flight plan *)
-  mutable predict: pln;      (* Prediction *)
-  mutable route: Xy.t array; (* Positions every delta sec. *)
-  (*//////////////////////////////////////////////////////////////*)
+  speed: speed;              		(* Nominal speed *)
+  mutable pln: pln;          		(* Real flightplan *)
+  mutable leg: int;          		(* Current leg in the flight plan *)
+  mutable predict: pln;      		(* Prediction *)
+  mutable route: Xy.t array; 		(* Positions every delta sec. *)
   mutable flightlvl: float;	    	(* FL of the plane *)
   mutable flightlvlselected: float;	(* Selected FL of the plane *)
-  (*//////////////////////////////////////////////////////////////*)
+  flightlvlinit: float;	    		(* Initial FL of the plane *)
+  flightlvlselectedinit: float;		(* Initial selected FL of the plane *)
 }
 
 val delta: time           (* trace time steps (sec) *)

@@ -119,6 +119,10 @@ let draw_acft state =
     let tags = [acft_tag; tag_id acft_tag i] in
     let next_pos = Acft.get_vector acft in
     let color = if conf.(i) then conf_color else acft_color in
+    let labeltext = ref "" in
+	if (acft.flightlvl = acft.flightlvlselected) then labeltext :=  String.concat "" ["FL" ; (string_of_int (int_of_float acft.flightlvl))];
+	if (acft.flightlvl > acft.flightlvlselected) then labeltext :=  String.concat "" ["FL";(string_of_int (int_of_float acft.flightlvl));"↘\nCFL";(string_of_int (int_of_float acft.flightlvlselected))];
+	if (acft.flightlvl < acft.flightlvlselected) then labeltext :=  String.concat "" ["FL";(string_of_int (int_of_float acft.flightlvl));"↗\nCFL";(string_of_int (int_of_float acft.flightlvlselected))];
     (* Plot *)
     let (x, y as xy) = cv_xy state (Acft.get_pos acft) and d = 5 in
     ignore (Canvas.create_rectangle ~x1:(x-d) ~y1:(y-d) ~x2:(x+d) ~y2:(y+d)
@@ -128,10 +132,7 @@ let draw_acft state =
 	      ~fill:color ~width:2 ~tags:tags state.cv);
    (* Label *)
      ignore (Canvas.create_text ~x:(x+10) ~y:(y-10)
-(*////////////////////////////////////////////////////////////*)
-	    (*~text: (String.concat " " ["FL"; (string_of_int acft.flightlvl) ])*)
-	    ~text: (String.concat " " ["FL"; (string_of_int (int_of_float acft.flightlvl))])
-(*////////////////////////////////////////////////////////////*)
+		~text: (!labeltext)
 	    ~fill:scale_color ~anchor:`Nw ~tags:tags state.cv);
     (* Comet *)
     Array.iteri (fun j xyj ->

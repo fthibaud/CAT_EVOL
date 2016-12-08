@@ -29,10 +29,10 @@ type t = {
   mutable leg: int;                 (* Current leg in flightplan *)
   mutable predict: pln;             (* Prediction *)
   mutable route: Xy.t array;        (* Positions every delta sec. *)
-  (*//////////////////////////////////////////////////////////////*)
   mutable flightlvl: float;	    	(* FL of the plane *)
   mutable flightlvlselected: float;	(* Selected FL of the plane *)
-  (*//////////////////////////////////////////////////////////////*)
+  flightlvlinit: float;	    		(* Initial FL of the plane *)
+  flightlvlselectedinit: float;		(* Initial selected FL of the plane *)
 }
 
 
@@ -114,8 +114,11 @@ let reset acft =
   let xys = [|snd acft.pln.(0); snd acft.pln.(last)|] in
   acft.pln <- create_pln acft.speed dspeed t xys;
   acft.leg <- 0;
+   acft.flightlvl <- acft.flightlvlinit;
+  acft.flightlvlselected <= acft.flightlvlselectedinit;
   acft.predict <- create_pln acft.speed 0. t xys;
   acft.route <- create_route acft.pln
+
 
 let nav speed xys =
   let max_a = max_turn *. Xy.radians in
@@ -235,11 +238,14 @@ let seg_detect orig1 dest1 orig2 dest2 sep dsep =
 
 let detect acft1 acft2 =
   let first_t = ref max_float and segs1 = ref [] and segs2 = ref [] in
-	 
+  let conflict = ref false in  (* determines if there is a fl conflict *)
   let vsep = dspeed *. (acft1.speed +. acft2.speed) /. hour in
   let pred1 = acft1.predict and pred2 = acft2.predict in
   let rec detect leg1 orig1 leg2 orig2 t sep_t =
-  if (acft1.flightlvl = acft2.flightlvl) then (
+  
+  if ((abs (int_of_float (acft1.flightlvl-.acft2.flightlvl))) <= 9) then conflict := true;
+  
+  if (!conflict) then (
     if leg1 < Array.length pred1 && leg2 < Array.length pred2 then (
       let t1 = fst pred1.(leg1) and t2 = fst pred2.(leg2) in
       let next_t = min t1 t2 in
@@ -278,12 +284,13 @@ let roundabout size n =
     (* let t = 0. in *)
     let pln = create_pln speed dspeed t xys in
 (*//////////////////////////////////////////////////////////////*)
-    let flightlvl = float_of_int (10*(8+(Random.int 5))) in						(*Attribue un FL aléatoire entre FL80 et FL120*)
+    let flightlvl = float_of_int (10*(8+(Random.int 10))) in					(*Attribue un FL aléatoire entre FL80 et FL160*)
+    let flightlvlselected = float_of_int (10*(8+(Random.int 10))) in	
 (*//////////////////////////////////////////////////////////////*)
     let route = create_route pln in
     let a = {speed=speed; pln=pln; leg=0; predict=[||]; route=route;   
 (*//////////////////////////////////////////////////////////////*)
-    flightlvl = flightlvl;  flightlvlselected = (flightlvl+.100.);
+    flightlvl = flightlvl;  flightlvlselected = flightlvlselected; flightlvlinit = flightlvl ; flightlvlselectedinit = flightlvlselected;
 (*//////////////////////////////////////////////////////////////*)
     } in
     Printf.printf "%f, %f" a.flightlvl a.flightlvlselected;
