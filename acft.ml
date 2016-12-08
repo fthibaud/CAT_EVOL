@@ -1,15 +1,17 @@
 (* ocamlopt.opt -o simu -I +labltk labltk.cmxa unix.cmxa simu.ml *)
 
-let delta = 5.           (* trace time steps (sec) *)
-let vector = 60.         (* speed vector size (sec) *)
-let max_speed = 550.     (* max speed (Knots) *)
-let dspeed = 0.05        (* Speed uncertainty rate *)
-let alpha = 5.           (* turn angle discretisation (deg) *)
-let std_turn = 120.      (* time for a full standard round (sec) *)
-let max_turn = 15.       (* max turn (deg) *)
-let sep = 5.             (* minimal separation (Nm) *)
-let max_start_t = 30.    (* maximam start time (sec) *)
-let min_conf_t = 30.     (* minimal time of first conflict *)
+
+let delta = 5.           		(* trace time steps (sec) *)
+let vspeed = 1000.*.delta/.60.  (* Vertical Speed (ft/delta) *)
+let vector = 60.         		(* speed vector size (sec) *)
+let max_speed = 550.     		(* max speed (Knots) *)
+let dspeed = 0.05        		(* Speed uncertainty rate *)
+let alpha = 5.           		(* turn angle discretisation (deg) *)
+let std_turn = 120.      		(* time for a full standard round (sec) *)
+let max_turn = 15.       		(* max turn (deg) *)
+let sep = 5.             		(* minimal separation (Nm) *)
+let max_start_t = 30.    		(* maximam start time (sec) *)
+let min_conf_t = 30.     		(* minimal time of first conflict *)
 
 let hour = 3600.
 
