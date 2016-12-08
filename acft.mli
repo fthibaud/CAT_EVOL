@@ -35,7 +35,7 @@ val t_start: t -> time
 val t_cur: t -> time
 val t_end: t -> time
 
-val update: t -> time -> unit
+val update: t -> time -> float -> unit
 val get_pos: t -> Xy.t
 val get_vector: t -> Xy.t
 val get_comet: t -> Xy.t array

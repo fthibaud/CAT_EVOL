@@ -70,11 +70,10 @@ let t_cur acft = fst acft.predict.(0)
 
 let t_end acft = fst acft.pln.(Array.length acft.pln - 1)
 
-let update acft t =
-  if (acft.flightlvl < acft.flightlvlselected) then acft.flightlvl <- min acft.flightlvlselected (acft.flightlvl +. vspeed);
-  if (acft.flightlvl > acft.flightlvlselected) then acft.flightlvl <- max acft.flightlvlselected (acft.flightlvl -. vspeed);
+let update acft t sens =
   let last = Array.length acft.pln - 1 in
-  if t <= fst acft.pln.(acft.leg) then acft.leg <- 0;
+  if t <= fst acft.pln.(acft.leg) then 
+	acft.leg <- 0;
   while acft.leg < last && fst acft.pln.(acft.leg + 1) < t do
     acft.leg <- acft.leg + 1
   done;
@@ -86,7 +85,9 @@ let update acft t =
     let t1 = fst acft.pln.(i) +. d *. hour /. acft.speed in
     xys.(0) <- Xy.bary acft.pln.(i) (t1, snd acft.pln.(i + 1)) t)
   else xys.(0) <- Xy.bary acft.pln.(i) acft.pln.(i + 1) t;
-  acft.predict <- create_pln acft.speed 0. t xys
+  acft.predict <- create_pln acft.speed 0. t xys;
+  if (acft.flightlvl < acft.flightlvlselected) then acft.flightlvl <- min acft.flightlvlselected (acft.flightlvl +. sens *.vspeed);
+  if (acft.flightlvl > acft.flightlvlselected) then acft.flightlvl <- max acft.flightlvlselected (acft.flightlvl -. sens *.vspeed)
 	
 
 let get_pos acft =
@@ -115,7 +116,7 @@ let reset acft =
   acft.pln <- create_pln acft.speed dspeed t xys;
   acft.leg <- 0;
    acft.flightlvl <- acft.flightlvlinit;
-  acft.flightlvlselected <= acft.flightlvlselectedinit;
+  acft.flightlvlselected <- acft.flightlvlselectedinit;
   acft.predict <- create_pln acft.speed 0. t xys;
   acft.route <- create_route acft.pln
 
@@ -294,7 +295,7 @@ let roundabout size n =
 (*//////////////////////////////////////////////////////////////*)
     } in
     Printf.printf "%f, %f" a.flightlvl a.flightlvlselected;
-    update a 0.;
+    update a 0. 0.;
     a in
   let rec first_conf_t a i j =
     if i = j then max_float
