@@ -11,7 +11,8 @@ type t = {  (* Aircraft *)
   mutable predict: pln;      (* Prediction *)
   mutable route: Xy.t array; (* Positions every delta sec. *)
   (*//////////////////////////////////////////////////////////////*)
-  mutable flightlvl: int;	    (* FL de l'avion *)
+  mutable flightlvl: float;	    	(* FL of the plane *)
+  mutable flightlvlselected: float;	(* Selected FL of the plane *)
   (*//////////////////////////////////////////////////////////////*)
 }
 

@@ -2,7 +2,7 @@
 
 
 let delta = 5.           		(* trace time steps (sec) *)
-let vspeed = 1000.*.delta/.60.  (* Vertical Speed (ft/delta) *)
+let vspeed = 10.*.delta/.60.    (* Vertical Speed (ft/delta) *)
 let vector = 60.         		(* speed vector size (sec) *)
 let max_speed = 550.     		(* max speed (Knots) *)
 let dspeed = 0.05        		(* Speed uncertainty rate *)
@@ -30,7 +30,8 @@ type t = {
   mutable predict: pln;             (* Prediction *)
   mutable route: Xy.t array;        (* Positions every delta sec. *)
   (*//////////////////////////////////////////////////////////////*)
-  mutable flightlvl: int;	    (* FL de l'avion *)
+  mutable flightlvl: float;	    	(* FL of the plane *)
+  mutable flightlvlselected: float;	(* Selected FL of the plane *)
   (*//////////////////////////////////////////////////////////////*)
 }
 
@@ -70,6 +71,8 @@ let t_cur acft = fst acft.predict.(0)
 let t_end acft = fst acft.pln.(Array.length acft.pln - 1)
 
 let update acft t =
+  if (acft.flightlvl < acft.flightlvlselected) then acft.flightlvl <- min acft.flightlvlselected (acft.flightlvl +. vspeed);
+  if (acft.flightlvl > acft.flightlvlselected) then acft.flightlvl <- max acft.flightlvlselected (acft.flightlvl -. vspeed);
   let last = Array.length acft.pln - 1 in
   if t <= fst acft.pln.(acft.leg) then acft.leg <- 0;
   while acft.leg < last && fst acft.pln.(acft.leg + 1) < t do
@@ -84,6 +87,7 @@ let update acft t =
     xys.(0) <- Xy.bary acft.pln.(i) (t1, snd acft.pln.(i + 1)) t)
   else xys.(0) <- Xy.bary acft.pln.(i) acft.pln.(i + 1) t;
   acft.predict <- create_pln acft.speed 0. t xys
+	
 
 let get_pos acft =
   snd acft.predict.(0)
@@ -274,14 +278,15 @@ let roundabout size n =
     (* let t = 0. in *)
     let pln = create_pln speed dspeed t xys in
 (*//////////////////////////////////////////////////////////////*)
-    let flightlvl = (10*(8+(Random.int 5))) in						(*Attribue un FL aléatoire entre FL80 et FL120*)
+    let flightlvl = float_of_int (10*(8+(Random.int 5))) in						(*Attribue un FL aléatoire entre FL80 et FL120*)
 (*//////////////////////////////////////////////////////////////*)
     let route = create_route pln in
     let a = {speed=speed; pln=pln; leg=0; predict=[||]; route=route;   
 (*//////////////////////////////////////////////////////////////*)
-    flightlvl = flightlvl;  
+    flightlvl = flightlvl;  flightlvlselected = (flightlvl+.100.);
 (*//////////////////////////////////////////////////////////////*)
     } in
+    Printf.printf "%f, %f" a.flightlvl a.flightlvlselected;
     update a 0.;
     a in
   let rec first_conf_t a i j =

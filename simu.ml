@@ -130,7 +130,7 @@ let draw_acft state =
      ignore (Canvas.create_text ~x:(x+10) ~y:(y-10)
 (*////////////////////////////////////////////////////////////*)
 	    (*~text: (String.concat " " ["FL"; (string_of_int acft.flightlvl) ])*)
-	    ~text: (String.concat " " ["FL"; (string_of_int acft.flightlvl) ])
+	    ~text: (String.concat " " ["FL"; (string_of_int (int_of_float acft.flightlvl))])
 (*////////////////////////////////////////////////////////////*)
 	    ~fill:scale_color ~anchor:`Nw ~tags:tags state.cv);
     (* Comet *)
