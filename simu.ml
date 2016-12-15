@@ -39,7 +39,12 @@ type state = {
   mutable start_t: float;       (* Absolute beginning time in sec. *)
   mutable speedup: float;       (* Time acceleration *)
   mutable scale: float;         (* pixels per Nm *)
+<<<<<<< HEAD
   mutable xy0: Xyz.point;            (* pixels *)
+=======
+  mutable xy0: Xy.t;            (* pixels *)
+  mutable sens: float;
+>>>>>>> f7ca9dbd98cc6a987452379ed964105a0f67d53e
 }
 
 let time = Unix.gettimeofday
@@ -59,6 +64,7 @@ let new_state state n =
   state.start_t <- time () -. times.(1);
   state.cur <- -1;
   state.dev_xy <- [||];
+  state.sens <- 1.;
   state.speedup <- 1.
 
 (* Drawings ---------------------------------------------------------------- *)
@@ -169,7 +175,7 @@ let draw_all state =
   if state.mode = Basic then Canvas.delete state.cv [`Tag conf_tag];
   let t = state_time state in
   Array.iteri (fun id acft ->
-    Acft.update acft t;
+    Acft.update acft t state.sens;
     if state.mode = Dynamic && state.cur = id && state.dev_xy <> [||] then (
       acft.Acft.predict <- Acft.dev acft (t_dev acft) state.dev_xy.(0));
     if Canvas.gettags state.cv (`Tag (tag_id pln_tag id)) = [] then
@@ -186,6 +192,7 @@ let draw_all state =
 (* Interactions ----------------------------------------------------------- *)
 
 let highlight_current state evnt =
+  state.sens <- 0.;
   if state.mode <> Show then (
     state.cur <- get_id (Canvas.gettags state.cv (`Tag current_tag));
     Canvas.configure_line ~fill:pln_color state.cv (`Tag pln_tag);
@@ -195,9 +202,11 @@ let highlight_current state evnt =
       Canvas.raise state.cv ~above:(`Tag around_tag) tag;
       let tag = `Tag (tag_id pln_tag state.cur) in
       Canvas.configure_line ~fill:edit_color state.cv tag;
-      if state.mode <> Basic then draw_conf state))
+      if state.mode <> Basic then draw_conf state));
+  state.sens <- 1.
 
 let drag_edit state evnt =
+  state.sens <- 0.;
   if state.mode <> Show && state.cur <> -1 then (
     let a = state.acft.(state.cur) in
     let t = state_time state in
@@ -214,10 +223,12 @@ let drag_edit state evnt =
     else (
       state.dev_xy <- [||];
       Canvas.delete state.cv [`Tag edit_tag];
-      Acft.update a (Acft.t_cur a);
-      if state.mode = Dynamic then draw_conf state))
+      Acft.update a (Acft.t_cur a) state.sens;
+      if state.mode = Dynamic then draw_conf state));
+    state.sens <- 1.
 
 let apply_edit state evnt =
+  state.sens <- 0.;
   if state.mode <> Show && state.cur <> -1 && state.dev_xy <> [||] then (
     let a = state.acft.(state.cur) in
     a.Acft.predict <- Acft.dev a (t_dev a) state.dev_xy.(0);
@@ -229,18 +240,21 @@ let apply_edit state evnt =
     let tag = `Tag (tag_id pln_tag state.cur) in
     Canvas.delete state.cv [tag; `Tag edit_tag];
     draw_all state;
-    Canvas.configure_line ~fill:edit_color state.cv tag)
+    Canvas.configure_line ~fill:edit_color state.cv tag);
+   state.sens <- 1.
 
 let cancel_edit state =
+  state.sens <- 0.;
   if state.mode <> Show then (
     Canvas.delete state.cv [`Tag edit_tag];
     Canvas.configure_line ~fill:pln_color state.cv (`Tag pln_tag);
     let a = state.acft.(state.cur) in
     state.cur <- -1;
     state.dev_xy <- [||];
-    if state.mode = Dynamic then (
-      Acft.update a (Acft.t_cur a);
-      draw_conf state))
+    if state.mode = Dynamic then (	  
+      Acft.update a (Acft.t_cur a) state.sens;
+      draw_conf state));
+    state.sens <- 1.
     
 let incr_speed state dspeed () =
   let t = time () in
@@ -290,7 +304,9 @@ let scroll state evnt =
 
 let back state evnt =
   state.start_t <- state.start_t +. Acft.delta;
-  draw_all state
+  state.sens <- -.Acft.delta;
+  draw_all state;
+  state.sens <- 1.
 
 let change_mode state =
   let text = match state.mode with
@@ -323,7 +339,12 @@ let main =
     start_t = time ();
     speedup = speedup;
     scale = scale;
+<<<<<<< HEAD
     xy0 = Xyz.mul 0.5 {x= size; y=size; z=180.};
+=======
+    sens = 1.;
+    xy0 = Xy.mul 0.5 (size, size);
+>>>>>>> f7ca9dbd98cc6a987452379ed964105a0f67d53e
   } in
   Button.configure ~command:(fun () -> change_mode state) state.btn.(0);
   Button.configure ~command:(redo state) state.btn.(1);

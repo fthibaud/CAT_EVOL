@@ -62,6 +62,7 @@ let t_cur acft = fst acft.predict.(0)
 
 let t_end acft = fst acft.pln.(Array.length acft.pln - 1)
 
+<<<<<<< HEAD
 let update acft t =
 let last = Array.length acft.pln - 1 in
 if t <= fst acft.pln.(acft.leg) then acft.leg <- 0;
@@ -77,6 +78,27 @@ if t < fst acft.pln.(0) then (
 				  xys.(0) <- Xyz.bary acft.pln.(i) (t1, snd acft.pln.(i + 1)) t)
 else xys.(0) <- Xyz.bary acft.pln.(i) acft.pln.(i + 1) t;
 acft.predict <- create_pln acft.speed 0. t xys
+=======
+let update acft t sens =
+  let last = Array.length acft.pln - 1 in
+  if t <= fst acft.pln.(acft.leg) then 
+	acft.leg <- 0;
+  while acft.leg < last && fst acft.pln.(acft.leg + 1) < t do
+    acft.leg <- acft.leg + 1
+  done;
+  let xys = Array.init (Array.length acft.pln - acft.leg) (fun i ->
+    snd acft.pln.(acft.leg + i)) in
+  let i = min (Array.length acft.pln - 2) acft.leg in
+  if t < fst acft.pln.(0) then (
+    let d = Xy.norm (Xy.sub (snd acft.pln.(i + 1)) (snd acft.pln.(i))) in
+    let t1 = fst acft.pln.(i) +. d *. hour /. acft.speed in
+    xys.(0) <- Xy.bary acft.pln.(i) (t1, snd acft.pln.(i + 1)) t)
+  else xys.(0) <- Xy.bary acft.pln.(i) acft.pln.(i + 1) t;
+  acft.predict <- create_pln acft.speed 0. t xys;
+  if (acft.flightlvl < acft.flightlvlselected) then acft.flightlvl <- min acft.flightlvlselected (acft.flightlvl +. sens *.vspeed);
+  if (acft.flightlvl > acft.flightlvlselected) then acft.flightlvl <- max acft.flightlvlselected (acft.flightlvl -. sens *.vspeed)
+	
+>>>>>>> f7ca9dbd98cc6a987452379ed964105a0f67d53e
 
 let get_pos acft =
 snd acft.predict.(0)
@@ -98,6 +120,7 @@ Array.init 5 (fun j ->
 		  else Xyz.bary p1 p2 (float k))
 
 let reset acft =
+<<<<<<< HEAD
 let t = fst acft.pln.(0) in
 let last = Array.length acft.pln - 1 in
 let xys = [|snd acft.pln.(0); snd acft.pln.(last)|] in
@@ -105,6 +128,18 @@ acft.pln <- create_pln acft.speed dspeed t xys;
 acft.leg <- 0;
 acft.predict <- create_pln acft.speed 0. t xys;
 acft.route <- create_route acft.pln
+=======
+  let t = fst acft.pln.(0) in
+  let last = Array.length acft.pln - 1 in
+  let xys = [|snd acft.pln.(0); snd acft.pln.(last)|] in
+  acft.pln <- create_pln acft.speed dspeed t xys;
+  acft.leg <- 0;
+   acft.flightlvl <- acft.flightlvlinit;
+  acft.flightlvlselected <- acft.flightlvlselectedinit;
+  acft.predict <- create_pln acft.speed 0. t xys;
+  acft.route <- create_route acft.pln
+
+>>>>>>> f7ca9dbd98cc6a987452379ed964105a0f67d53e
 
 let nav speed xys =
 let max_a = max_turn *. Xyz.radians in
@@ -253,6 +288,7 @@ detect 1 (snd pred1.(0)) 1 (snd (pred2.(0))) (fst pred1.(0)) sep;
 (!first_t, (!segs1, !segs2))
 
 let roundabout size n =
+<<<<<<< HEAD
 let r = 0.9 *. size in
 let scramble x dx = x +. Random.float (2. *. dx) -. dx in
 let random_acft alpha =
@@ -282,3 +318,43 @@ Array.iteri (fun i _ ->
 		 acft.(i) <- random_acft alpha.(i)
 		 done) acft;
 acft
+=======
+  let r = 0.9 *. size in
+  let scramble x dx = x +. Random.float (2. *. dx) -. dx in
+  let random_acft alpha =
+    let u = (cos alpha, sin alpha) in
+    let xy0 = Xy.add (Xy.mul r u) (scramble 0. sep, scramble 0. sep) in
+    let b = scramble alpha 0.5 in
+    let xys = [|xy0; Xy.mul (-.r) (cos b, sin b)|] in
+    let speed = max_speed *. (0.7 +. Random.float (0.3 -. dspeed)) in
+    (* Pour tester avec des heures de debut differentes... *)
+    let t = Random.float max_start_t in
+    (* let t = 0. in *)
+    let pln = create_pln speed dspeed t xys in
+(*//////////////////////////////////////////////////////////////*)
+    let flightlvl = float_of_int (10*(8+(Random.int 10))) in					(*Attribue un FL aléatoire entre FL80 et FL160*)
+    let flightlvlselected = float_of_int (10*(8+(Random.int 10))) in	
+(*//////////////////////////////////////////////////////////////*)
+    let route = create_route pln in
+    let a = {speed=speed; pln=pln; leg=0; predict=[||]; route=route;   
+(*//////////////////////////////////////////////////////////////*)
+    flightlvl = flightlvl;  flightlvlselected = flightlvlselected; flightlvlinit = flightlvl ; flightlvlselectedinit = flightlvlselected;
+(*//////////////////////////////////////////////////////////////*)
+    } in
+    Printf.printf "%f, %f" a.flightlvl a.flightlvlselected;
+    update a 0. 0.;
+    a in
+  let rec first_conf_t a i j =
+    if i = j then max_float
+    else min (fst (detect a.(i) a.(j))) (first_conf_t a (i + 1) j) in
+  let slices = max n (round (Xy.pi *. size /. sep /. 1.5)) in
+  let s = float slices in
+  let alpha = Array.init slices (fun i -> 2.*. float i *. Xy.pi /. s) in
+  Array.sort (fun _ _ -> Random.int 3 - 1) alpha;
+  let acft = Array.init n (fun i -> random_acft alpha.(i)) in
+  Array.iteri (fun i _ ->
+    while first_conf_t acft 0 i < fst acft.(i).pln.(0) +. min_conf_t do
+      acft.(i) <- random_acft alpha.(i)
+    done) acft;
+  acft
+>>>>>>> f7ca9dbd98cc6a987452379ed964105a0f67d53e
