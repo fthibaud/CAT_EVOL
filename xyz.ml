@@ -1,22 +1,26 @@
-(* Float coords 2D --------------------------------------------------------- *)
+(* Float coords 3D --------------------------------------------------------- *)
 
 (* Type of a point or a vector *)
-type t = float * float
+type point = {                    	
+  x: float;                 		(* Position x *)
+  y: float;                 		(* Position y *)
+  z: float;             				(* Altitude *)
+}
 
 (* Basic operations on points/vectors *)
-let mul k (x, y) = (k *. x, k *. y) (* Multiplication of coordinates by a scalar number*)
-let add (x1, y1) (x2, y2) = (x1 +. x2, y1 +. y2) (* Addition coordinate to coordinate *)
-let sub (x1, y1) (x2, y2) = (x1 -. x2, y1 -. y2) (* Substraction coordinate to coordinate *)
-let sca (x1, y1) (x2, y2) = x1 *. x2 +. y1 *. y2 (* Scalar product *)
-let det (x1, y1) (x2, y2) = x1 *. y2 -. y1 *. x2 (* determinant *)
+let mul k p = {x=k*.p.x; y=k*.p.y; z=k*.p.z;}						(* Multiplication of coordinates by a scalar number*)
+let add p1 p2 = {x=p1.x+.p2.x; y=p1.y+.p2.y; z=p1.z+.p2.z;}		(* Addition coordinate to coordinate *)
+let sub p1 p2 = {x=p1.x-.p2.x; y=p1.y-.p2.y; z=p1.z-.p2.z;}		(* Substraction coordinate to coordinate *)
+let sca p1 p2 = p1.x *. p2.x +. p1.y *. p2.y 					(* Scalar product Oxy*)
+let det p1 p2 = p1.x *. p2.y -. p1.y *. p2.x 					(* Determinant Oxy *)
 
-(* Euclidian Norm *)
+(* Euclidian Norm Oxy *)
 let norm2 v = sca v v (* Norm² *)
 let norm v = sqrt (norm2 v) (* Norm *)
 
 (* Barycentre of two points *)
-let bary (t1, xy1) (t2, xy2) t =
-  add xy1 (mul ((t -. t1) /.(t2 -. t1)) (sub xy2 xy1))
+let bary (t1, p1) (t2, p2) t =
+  add p1 (mul ((t -. t1) /.(t2 -. t1)) (sub p2 p1))
 
 (* Conversions between angles *)
 let pi = atan2 0. (-1.) (* definition of pi *)
@@ -24,8 +28,8 @@ let twopi = 2. *. pi (* definition of 2*pi *)
 let radians = pi /. 180. (* rate to convert degrees into radians *)
 let degrees = 180. /. pi (* rate to convert radians into degrees *)
 
-(* Arctan of y/x, gives theta angle for polar conversion *)
-let angle (x, y) = atan2 y x
+(* Arctan of y/x, gives theta angle for polar conversion Oxy*)
+let angle p = atan2 p.y p.x
 
 (*Polar coordinates*)
 let polar a = (cos a, sin a)
@@ -60,4 +64,4 @@ let dist_seg_seg (a, b) (c, d) =
 
 (*test*)
 
-
+let xy2xyz (x,y) = {x=x;y=y;z=0.}

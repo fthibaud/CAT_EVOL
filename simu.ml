@@ -34,12 +34,12 @@ type state = {
   mutable acft: Acft.t array;   (* Aircraft array *)
   mutable mode: mode;           (* Visu mode *)
   mutable cur: int;             (* Mouse current aircraft index or -1 *)
-  mutable dev_xy: Xy.t array;   (* Mouse world coords during drag or [||] *)
+  mutable dev_xy: Xyz.point array;   (* Mouse world coords during drag or [||] *)
   mutable timer: Timer.t;       (* Animation loop timer *)
   mutable start_t: float;       (* Absolute beginning time in sec. *)
   mutable speedup: float;       (* Time acceleration *)
   mutable scale: float;         (* pixels per Nm *)
-  mutable xy0: Xy.t;            (* pixels *)
+  mutable xy0: Xyz.point;            (* pixels *)
 }
 
 let time = Unix.gettimeofday
@@ -52,7 +52,7 @@ let new_state state n =
   Canvas.delete state.cv [`Tag "all"];
   let w = float (Winfo.width state.cv) in
   let h = float (Winfo.height state.cv) in
-  state.xy0 <- Xy.mul 0.5 (w, h);
+  state.xy0 <- Xyz.mul 0.5 {x=w; y=h; z=0.};
   state.acft <- Acft.roundabout (min w h /. scale /. 2.) n;
   let times = Array.map Acft.t_start state.acft in
   Array.sort compare times;
@@ -68,11 +68,11 @@ let coords_get cv item =
   get (Canvas.coords_get cv item)
 
 let cv_xy state xy =
-  let (x, y) = Xy.add state.xy0 (Xy.mul state.scale xy) in
-  (round x, round y)
+  let p = Xyz.add state.xy0 (Xyz.mul state.scale xy) in
+  (round p.x,round p.y)
 
 let world_xy state (x, y) =
-  Xy.mul (1. /. state.scale) (Xy.sub (float x, float y) state.xy0)
+  Xyz.mul (1. /. state.scale) (Xyz.sub {x= float x; y= float y;z=0.} state.xy0)
 
 let tag_id tag id =
   Printf.sprintf "%s %d" tag id
@@ -120,10 +120,12 @@ let draw_acft state =
     let next_pos = Acft.get_vector acft in
     let color = if conf.(i) then conf_color else acft_color in
     let labeltext = ref "" in
-	if (acft.flightlvl = acft.flightlvlselected) then labeltext :=  String.concat "" ["FL" ; (string_of_int (int_of_float acft.flightlvl))];
-	if (acft.flightlvl > acft.flightlvlselected) then labeltext :=  String.concat "" ["FL";(string_of_int (int_of_float acft.flightlvl));"↘\nCFL";(string_of_int (int_of_float acft.flightlvlselected))];
-	if (acft.flightlvl < acft.flightlvlselected) then labeltext :=  String.concat "" ["FL";(string_of_int (int_of_float acft.flightlvl));"↗\nCFL";(string_of_int (int_of_float acft.flightlvlselected))];
-    (* Plot *)
+        labeltext := String.concat "" ["FL";(string_of_int (int_of_float acft.route.(0).z))];
+    (*let i = max (int_of_float (rtime state /. (Acft.delta))) 0 in
+	if (acft.flightlvl = acft.flightlvlselected) then labeltext :=  String.concat "" ["FL";(string_of_int (int_of_float acft.flightlvl.(i)))];
+	if (acft.flightlvl > acft.flightlvlselected) then labeltext :=  String.concat "" ["FL";(string_of_int (int_of_float acft.flightlvl.(i)));"↘\nCFL";(string_of_int (int_of_float acft.flightlvlselected.(i)))];
+	if (acft.flightlvl < acft.flightlvlselected) then labeltext :=  String.concat "" ["FL";(string_of_int (int_of_float acft.flightlvl.(i)));"↗\nCFL";(string_of_int (int_of_float acft.flightlvlselected.(i)))];
+    *)(* Plot *)
     let (x, y as xy) = cv_xy state (Acft.get_pos acft) and d = 5 in
     ignore (Canvas.create_rectangle ~x1:(x-d) ~y1:(y-d) ~x2:(x+d) ~y2:(y+d)
 	      ~outline:color ~tags:tags state.cv);
@@ -321,7 +323,7 @@ let main =
     start_t = time ();
     speedup = speedup;
     scale = scale;
-    xy0 = Xy.mul 0.5 (size, size);
+    xy0 = Xyz.mul 0.5 {x= size; y=size; z=180.};
   } in
   Button.configure ~command:(fun () -> change_mode state) state.btn.(0);
   Button.configure ~command:(redo state) state.btn.(1);
