@@ -59,3 +59,8 @@ let dist_seg_seg (a, b) (c, d) =
   else min (min (dseg ca cd) (dseg cb cd)) (min (dseg ac ab) (dseg ad ab))
 
 (*test*)
+
+
+	
+	
+
