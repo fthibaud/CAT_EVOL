@@ -34,13 +34,12 @@ type state = {
   mutable acft: Acft.t array;   (* Aircraft array *)
   mutable mode: mode;           (* Visu mode *)
   mutable cur: int;             (* Mouse current aircraft index or -1 *)
-  mutable dev_xy: Xy.t array;   (* Mouse world coords during drag or [||] *)
+  mutable dev_xy: Xyz.point array;   (* Mouse world coords during drag or [||] *)
   mutable timer: Timer.t;       (* Animation loop timer *)
   mutable start_t: float;       (* Absolute beginning time in sec. *)
   mutable speedup: float;       (* Time acceleration *)
   mutable scale: float;         (* pixels per Nm *)
-  mutable xy0: Xy.t;            (* pixels *)
-  mutable sens: float;
+  mutable xy0: Xyz.point;            (* pixels *)
 }
 
 let time = Unix.gettimeofday
@@ -53,14 +52,13 @@ let new_state state n =
   Canvas.delete state.cv [`Tag "all"];
   let w = float (Winfo.width state.cv) in
   let h = float (Winfo.height state.cv) in
-  state.xy0 <- Xy.mul 0.5 (w, h);
+  state.xy0 <- Xyz.mul 0.5 Xyz.{x=w; y=h; z=0.;zs=0.};
   state.acft <- Acft.roundabout (min w h /. scale /. 2.) n;
   let times = Array.map Acft.t_start state.acft in
   Array.sort compare times;
   state.start_t <- time () -. times.(1);
   state.cur <- -1;
   state.dev_xy <- [||];
-  state.sens <- 1.;
   state.speedup <- 1.
 
 (* Drawings ---------------------------------------------------------------- *)
@@ -70,11 +68,11 @@ let coords_get cv item =
   get (Canvas.coords_get cv item)
 
 let cv_xy state xy =
-  let (x, y) = Xy.add state.xy0 (Xy.mul state.scale xy) in
-  (round x, round y)
+  let p = Xyz.add state.xy0 (Xyz.mul state.scale xy) in
+  (round p.Xyz.x,round p.Xyz.y)
 
 let world_xy state (x, y) =
-  Xy.mul (1. /. state.scale) (Xy.sub (float x, float y) state.xy0)
+  Xyz.mul (1. /. state.scale) (Xyz.sub Xyz.{x= float x; y= float y;z=0.;zs=0.} state.xy0)
 
 let tag_id tag id =
   Printf.sprintf "%s %d" tag id
@@ -122,10 +120,14 @@ let draw_acft state =
     let next_pos = Acft.get_vector acft in
     let color = if conf.(i) then conf_color else acft_color in
     let labeltext = ref "" in
-	if (acft.flightlvl = acft.flightlvlselected) then labeltext :=  String.concat "" ["FL" ; (string_of_int (int_of_float acft.flightlvl))];
-	if (acft.flightlvl > acft.flightlvlselected) then labeltext :=  String.concat "" ["FL";(string_of_int (int_of_float acft.flightlvl));"↘\nCFL";(string_of_int (int_of_float acft.flightlvlselected))];
-	if (acft.flightlvl < acft.flightlvlselected) then labeltext :=  String.concat "" ["FL";(string_of_int (int_of_float acft.flightlvl));"↗\nCFL";(string_of_int (int_of_float acft.flightlvlselected))];
-    (* Plot *)
+    let t = state_time state in
+    let pos =  Xyz.bary (acft.Acft.pln.(acft.Acft.leg)) (acft.Acft.pln.(min (acft.Acft.leg+1) (Array.length acft.Acft.pln - 1))) t in
+    let lvl = pos.Xyz.z in
+    let lvls = pos.Xyz.zs in
+	if (lvl = lvls) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl))];
+	if (lvl > lvls) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↘\nCFL";(string_of_int (Xyz.truncate lvls))];
+	if (lvl < lvls) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↗\nCFL";(string_of_int (Xyz.truncate lvls))];
+   (* Plot *)
     let (x, y as xy) = cv_xy state (Acft.get_pos acft) and d = 5 in
     ignore (Canvas.create_rectangle ~x1:(x-d) ~y1:(y-d) ~x2:(x+d) ~y2:(y+d)
 	      ~outline:color ~tags:tags state.cv);
@@ -169,7 +171,7 @@ let draw_all state =
   if state.mode = Basic then Canvas.delete state.cv [`Tag conf_tag];
   let t = state_time state in
   Array.iteri (fun id acft ->
-    Acft.update acft t state.sens;
+    Acft.update acft t;
     if state.mode = Dynamic && state.cur = id && state.dev_xy <> [||] then (
       acft.Acft.predict <- Acft.dev acft (t_dev acft) state.dev_xy.(0));
     if Canvas.gettags state.cv (`Tag (tag_id pln_tag id)) = [] then
@@ -186,7 +188,6 @@ let draw_all state =
 (* Interactions ----------------------------------------------------------- *)
 
 let highlight_current state evnt =
-  state.sens <- 0.;
   if state.mode <> Show then (
     state.cur <- get_id (Canvas.gettags state.cv (`Tag current_tag));
     Canvas.configure_line ~fill:pln_color state.cv (`Tag pln_tag);
@@ -196,11 +197,9 @@ let highlight_current state evnt =
       Canvas.raise state.cv ~above:(`Tag around_tag) tag;
       let tag = `Tag (tag_id pln_tag state.cur) in
       Canvas.configure_line ~fill:edit_color state.cv tag;
-      if state.mode <> Basic then draw_conf state));
-  state.sens <- 1.
+      if state.mode <> Basic then draw_conf state))
 
 let drag_edit state evnt =
-  state.sens <- 0.;
   if state.mode <> Show && state.cur <> -1 then (
     let a = state.acft.(state.cur) in
     let t = state_time state in
@@ -217,12 +216,10 @@ let drag_edit state evnt =
     else (
       state.dev_xy <- [||];
       Canvas.delete state.cv [`Tag edit_tag];
-      Acft.update a (Acft.t_cur a) state.sens;
-      if state.mode = Dynamic then draw_conf state));
-    state.sens <- 1.
+      Acft.update a (Acft.t_cur a);
+      if state.mode = Dynamic then draw_conf state))
 
 let apply_edit state evnt =
-  state.sens <- 0.;
   if state.mode <> Show && state.cur <> -1 && state.dev_xy <> [||] then (
     let a = state.acft.(state.cur) in
     a.Acft.predict <- Acft.dev a (t_dev a) state.dev_xy.(0);
@@ -234,21 +231,18 @@ let apply_edit state evnt =
     let tag = `Tag (tag_id pln_tag state.cur) in
     Canvas.delete state.cv [tag; `Tag edit_tag];
     draw_all state;
-    Canvas.configure_line ~fill:edit_color state.cv tag);
-   state.sens <- 1.
+    Canvas.configure_line ~fill:edit_color state.cv tag)
 
 let cancel_edit state =
-  state.sens <- 0.;
   if state.mode <> Show then (
     Canvas.delete state.cv [`Tag edit_tag];
     Canvas.configure_line ~fill:pln_color state.cv (`Tag pln_tag);
     let a = state.acft.(state.cur) in
     state.cur <- -1;
     state.dev_xy <- [||];
-    if state.mode = Dynamic then (	  
-      Acft.update a (Acft.t_cur a) state.sens;
-      draw_conf state));
-    state.sens <- 1.
+    if state.mode = Dynamic then (
+      Acft.update a (Acft.t_cur a);
+      draw_conf state))
     
 let incr_speed state dspeed () =
   let t = time () in
@@ -298,9 +292,7 @@ let scroll state evnt =
 
 let back state evnt =
   state.start_t <- state.start_t +. Acft.delta;
-  state.sens <- -.Acft.delta;
-  draw_all state;
-  state.sens <- 1.
+  draw_all state
 
 let change_mode state =
   let text = match state.mode with
@@ -333,8 +325,7 @@ let main =
     start_t = time ();
     speedup = speedup;
     scale = scale;
-    sens = 1.;
-    xy0 = Xy.mul 0.5 (size, size);
+    xy0 = Xyz.mul 0.5 Xyz.{x= size; y=size; z=180.;zs=180.};
   } in
   Button.configure ~command:(fun () -> change_mode state) state.btn.(0);
   Button.configure ~command:(redo state) state.btn.(1);
