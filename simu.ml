@@ -74,6 +74,7 @@ let cv_xy state xy =
 let world_xy state (x, y) =
   Xyz.mul (1. /. state.scale) (Xyz.sub Xyz.{x= float x; y= float y;z=0.;zs=0.} state.xy0)
 
+
 let tag_id tag id =
   Printf.sprintf "%s %d" tag id
 
@@ -128,6 +129,7 @@ let draw_acft state =
 	if (lvl > lvls) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↘\nCFL";(string_of_int (Xyz.truncate lvls))];
 	if (lvl < lvls) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↗\nCFL";(string_of_int (Xyz.truncate lvls))];
    (* Plot *)
+
     let (x, y as xy) = cv_xy state (Acft.get_pos acft) and d = 5 in
     ignore (Canvas.create_rectangle ~x1:(x-d) ~y1:(y-d) ~x2:(x+d) ~y2:(y+d)
 	      ~outline:color ~tags:tags state.cv);
@@ -326,6 +328,7 @@ let main =
     speedup = speedup;
     scale = scale;
     xy0 = Xyz.mul 0.5 Xyz.{x= size; y=size; z=180.;zs=180.};
+
   } in
   Button.configure ~command:(fun () -> change_mode state) state.btn.(0);
   Button.configure ~command:(redo state) state.btn.(1);

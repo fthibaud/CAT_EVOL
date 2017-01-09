@@ -61,6 +61,3 @@ let dist_seg_seg (a, b) (c, d) =
 (*test*)
 
 
-	
-	
-

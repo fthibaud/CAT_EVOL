@@ -13,6 +13,7 @@ type point = {
 let mul k p = {x=k*.p.x; y=k*.p.y; z=k*.p.z; zs=k*.p.zs;}						(* Multiplication of coordinates by a scalar number*)
 let add p1 p2 = {x=p1.x+.p2.x; y=p1.y+.p2.y; z=p1.z+.p2.z; zs=p1.zs+.p2.zs;}		(* Addition coordinate to coordinate *)
 let sub p1 p2 = {x=p1.x-.p2.x; y=p1.y-.p2.y; z=p1.z-.p2.z; zs=p1.zs-.p2.zs;}		(* Substraction coordinate to coordinate *)
+
 let sca p1 p2 = p1.x *. p2.x +. p1.y *. p2.y 					(* Scalar product Oxy*)
 let det p1 p2 = p1.x *. p2.y -. p1.y *. p2.x 					(* Determinant Oxy *)
 

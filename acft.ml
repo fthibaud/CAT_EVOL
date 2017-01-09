@@ -41,6 +41,7 @@ let pln_of_string s =
 	let rec parse = function
 		| "" -> []
 		| s -> Scanf.sscanf s "%f,%f,%f %[^\n]" (fun t x y tl -> 
+
 						 (t, (x, y))::parse tl) in
 Array.of_list (parse s)
 
@@ -60,7 +61,6 @@ let create_route pln =
 			 else get t (i + 1)
 	in
 	Array.of_list (get (fst pln.(0)) 1)
-
 
 let t_start acft = fst acft.pln.(0)
 
@@ -83,8 +83,6 @@ let update acft t =
 		xys.(0) <- Xyz.bary acft.pln.(i) (t1, snd acft.pln.(i + 1)) t)
 	else xys.(0) <- Xyz.bary acft.pln.(i) acft.pln.(i + 1) t;
 	acft.predict <- create_pln acft.speed 0. t xys
-		
-	
 
 let get_pos acft =
 	snd acft.predict.(0)
@@ -289,7 +287,7 @@ let roots2 a b c =
 				   else [])
 	  else if a < 0. then [0., 1.]
 	  else [])
-	  
+
 
 type seg = Xyz.point * Xyz.point
 
@@ -378,6 +376,7 @@ Array.iteri (fun i _ ->
 		 while first_conf_t acft 0 i < fst acft.(i).pln.(0) +. min_conf_t do
 		 acft.(i) <- random_acft alpha.(i)
 		 done) acft;
+
 let t0 = (fst acft.(0).pln.(0)) in
 let z0 = (snd acft.(0).pln.(0)).Xyz.z in
 acft.(0).predict <- dev_lvl acft.(0) (t0 +. 1.) (Xyz.bary (acft.(0).pln.(0)) (acft.(0).pln.(1)) (t0 +. 1.)) (z0 +. 20.);
