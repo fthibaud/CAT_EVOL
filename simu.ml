@@ -234,6 +234,11 @@ let apply_edit state evnt =
     Canvas.delete state.cv [tag; `Tag edit_tag];
     draw_all state;
     Canvas.configure_line ~fill:edit_color state.cv tag)
+    
+let sel_lvl_edit state evnt =
+  if state.mode <> Show then
+    Printf.printf "Scroll"
+		
 
 let cancel_edit state =
   if state.mode <> Show then (
@@ -295,6 +300,10 @@ let scroll state evnt =
 let back state evnt =
   state.start_t <- state.start_t +. Acft.delta;
   draw_all state
+  
+let forward state evnt =
+  state.start_t <- state.start_t -. Acft.delta;
+  draw_all state
 
 let change_mode state =
   let text = match state.mode with
@@ -349,7 +358,8 @@ let main =
   bind [`ButtonReleaseDetail 1] [] (apply_edit state) state.cv;
   bind [`ButtonPressDetail 3] [] (fun _ -> cancel_edit state) state.cv;
   bind [`ButtonPressDetail 5] [] (scroll state) top;
- 
+  bind [`KeyPressDetail "f"] [] (fun _ -> forward state ())(*(sel_lvl_edit state)*) state.cv;
+  bind [`KeyPressDetail "p"] [] (sel_lvl_edit state) state.cv;
 
  
   Focus.set state.cv;
