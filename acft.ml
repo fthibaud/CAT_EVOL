@@ -9,7 +9,7 @@ let alpha = 5.           (* turn angle discretisation (deg) *)
 let std_turn = 120.      (* time for a full standard round (sec) *)
 let max_turn = 15.       (* max turn (deg) *)
 let sep = 5.           (* minimal vertical separation (Nm) *)
-let hsep = 10.          (* minimal vertical separation (Nm) *)
+let hsep = 9.          (* minimal vertical separation (Nm) *)
 let max_start_t = 30.    (* maximam start time (sec) *)
 let min_conf_t = 30.     (* minimal time of first conflict *)
 
@@ -252,7 +252,7 @@ let pos_detect acft =
 	    for j = 0 to i - 1 do
 	    let posi = get_pos acfti in
 	    let posj = get_pos acft.(j) in
-	    if (Xyz.sep2 posi posj sep hsep < 1.)then 
+	    if (Xyz.sepxy posi posj sep < 1. && Xyz.sepz posi posj hsep < 1.) then 
 	    (
 	     conf.(i) <- true;
 	     conf.(j) <- true)
@@ -291,6 +291,14 @@ let roots2 a b c =
 
 type seg = Xyz.point * Xyz.point
 
+let intersection_seg seg1 seg2 =
+	if (seg1 = [] || seg2 = []) then []
+	else(
+	 let [a,b] = seg1 and [c,d] = seg2 in
+	 if (c > b || d < a) then []
+		else [(max a c), (min b d)]
+		)
+
 let seg_detect orig1 dest1 orig2 dest2 sep dsep =
 	let x = Xyz.sub orig2 orig1 in
 	let v = Xyz.sub (Xyz.sub dest2 dest1) x in
@@ -303,12 +311,17 @@ let seg_detect2 orig1 dest1 orig2 dest2 sep dsep hsep dhsep =
 	let p1x = p1.Xyz.x and p2x = p2.Xyz.x in
 	let p1y = p1.Xyz.y and p2y = p2.Xyz.y in
 	let p1z = p1.Xyz.z and p2z = p2.Xyz.z in
-	let xysep2 = sep*.sep in
-	let zsep2 = hsep*.hsep in
-	let a = (p1x*.p1x +. p1y*.p1y -. dsep ** 2.)/.xysep2 +. (p1z*.p1z -. dhsep ** 2.)/.zsep2 in
-	let b = (p1x*.p2x +. p1y*.p2y -. sep *. dsep)/.xysep2 +. (p1z*.p2z -. hsep *. dhsep)/.zsep2 in
-	let c = (p2x*.p2x +. p2y*.p2y -. sep ** 2.)/.xysep2 +. (p2z*.p2z -. hsep ** 2.)/.zsep2 in
-	roots2 a b c
+	let a = (p1x*.p1x +. p1y*.p1y -. dsep ** 2.) in
+	let b = (p1x*.p2x +. p1y*.p2y -. sep *. dsep) in
+	let c = (p2x*.p2x +. p2y*.p2y -. sep ** 2.) in
+	let segxy = roots2 a b c in
+	let d = (p1z*.p1z -. dhsep ** 2.) in
+	let e = (p1z*.p2z -. hsep *. dhsep) in
+	let f = (p2z*.p2z -. hsep ** 2.) in
+	let segz = roots2 d e f in
+	intersection_seg segz segxy
+	
+	
 
 let detect acft1 acft2 =
 

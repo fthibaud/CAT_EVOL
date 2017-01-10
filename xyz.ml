@@ -21,12 +21,18 @@ let det p1 p2 = p1.x *. p2.y -. p1.y *. p2.x 					(* Determinant Oxy *)
 let norm2 v = sca v v (* Norm² *)
 let norm v = sqrt (norm2 v) (* Norm *)
 
-let sep2 p1 p2 xysep hsep = 
+let sepxy p1 p2 xysep = 
 	let dx = (p1.x -. p2.x) in
 	let dy = (p1.y -. p2.y) in
-	let dz = (p1.z -. p2.z) in
 	let dxy = dx*.dx +. dy*.dy in
-	dxy/.(xysep*.xysep) +. (dz*.dz)/.(hsep*.hsep)
+	dxy/.(xysep*.xysep)
+	
+let sepz p1 p2 hsep = 
+	let dz = (p1.z -. p2.z) in
+	(dz*.dz)/.(hsep*.hsep)
+	
+let sep2 p1 p2 xysep hsep = 
+	sepxy p1 p2 xysep +. sepz p1 p2 hsep
 
 
 (* Changes altitude *)
