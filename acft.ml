@@ -45,6 +45,7 @@ let pln_of_string s =
 						 (t, (x, y))::parse tl) in
 Array.of_list (parse s)
 
+
 let create_pln speed ds t0 xys =
 	let t = ref t0 in
 	Array.mapi (fun i xyi ->
@@ -292,12 +293,9 @@ let roots2 a b c =
 type seg = Xyz.point * Xyz.point
 
 let intersection_seg seg1 seg2 =
-	if (seg1 = [] || seg2 = []) then []
-	else(
-	 let [a,b] = seg1 and [c,d] = seg2 in
-	 if (c > b || d < a) then []
-		else [(max a c), (min b d)]
-		)
+	match seg1,seg2 with
+	| [a,b],[c,d] -> if (c > b || d < a) then [] else [(max a c), (min b d)]
+	| _ -> []
 
 let seg_detect orig1 dest1 orig2 dest2 sep dsep =
 	let x = Xyz.sub orig2 orig1 in
