@@ -235,26 +235,24 @@ let apply_edit state evnt =
     draw_all state;
     Canvas.configure_line ~fill:edit_color state.cv tag)
     
+let lvl_edit state evnt value =
+  if value > 0. then Printf.printf "Going up \n%!" else Printf.printf "Going down \n%!";
+  let a = state.acft.(state.cur) in
+  let t = state_time state in
+  let pos =  Xyz.bary (a.Acft.pln.(a.Acft.leg)) (a.Acft.pln.(min (a.Acft.leg+1) (Array.length a.Acft.pln - 1))) t in
+  Printf.printf "fl : %f \n%!" pos.Xyz.z;
+  Printf.printf "cfl avant : %f \n%!" pos.Xyz.zs;
+  let cfl = pos.Xyz.zs +. value in
+  Printf.printf "cfl après : %f \n%!" cfl;
+  a.Acft.predict <- Acft.dev_lvl a t pos cfl;
+  Acft.apply_dev a
+  
 let lvl_edit_up state evnt =
-  if state.mode <> Show && state.cur <> -1 then (
-    Printf.printf "Go up \n%!";
-    let a = state.acft.(state.cur) in
-    let t = state_time state in
-    let pos =  Xyz.bary (a.Acft.pln.(a.Acft.leg)) (a.Acft.pln.(min (a.Acft.leg+1) (Array.length a.Acft.pln - 1))) t in
-    Printf.printf "fl : %f \n%!" pos.Xyz.z;
-    Printf.printf "cfl avant : %f \n%!" pos.Xyz.zs;
-    let cfl = pos.Xyz.zs +. 10. in
-    Printf.printf "cfl après : %f \n%!" cfl;
-    a.Acft.predict <- Acft.dev_lvl a t pos cfl;
-    Acft.apply_dev a;
-    )
-		
+  if state.mode <> Show && state.cur <> -1 then (lvl_edit state evnt 10.)
+						  
 let lvl_edit_down state evnt =
-  if state.mode <> Show && state.cur <> -1 then (
-    Printf.printf "Go down \n%!";
-    let a = state.acft.(state.cur) in
-    Printf.printf "500 \n%!")
-
+  if state.mode <> Show && state.cur <> -1 then (lvl_edit state evnt (-.10.))
+  
 let cancel_edit state =
   if state.mode <> Show then (
     Canvas.delete state.cv [`Tag edit_tag];
