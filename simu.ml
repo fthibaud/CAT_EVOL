@@ -60,6 +60,12 @@ let new_state state n =
   state.cur <- -1;
   state.dev_xy <- [||];
   state.speedup <- 1.
+  
+let lvl_edit t a =
+	let pos =  Xyz.bary (a.Acft.pln.(a.Acft.leg)) (a.Acft.pln.(min (a.Acft.leg+1) (Array.length a.Acft.pln - 1))) t in
+	let afl = a.Acft.afl in
+	let dev = Acft.dev_lvl2 a t pos afl in
+	a.Acft.predict <- dev
 
 (* Drawings ---------------------------------------------------------------- *)
 
@@ -123,30 +129,42 @@ let draw_acft state =
     let labeltext = ref "" in
     let t = state_time state in
     let pos =  Xyz.bary (acft.Acft.pln.(acft.Acft.leg)) (acft.Acft.pln.(min (acft.Acft.leg+1) (Array.length acft.Acft.pln - 1))) t in
-    let lvl = pos.Xyz.z in
-    let lvls = pos.Xyz.zs in
-	if (lvl = lvls) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl))];
-	if (lvl > lvls) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↘\nCFL";(string_of_int (Xyz.truncate lvls))];
-	if (lvl < lvls) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↗\nCFL";(string_of_int (Xyz.truncate lvls))];
-   (* Plot *)
-
+    let lvl = if (abs_float (pos.Xyz.z) > 0.1) then pos.Xyz.z else (snd acft.Acft.pln.((Array.length acft.Acft.pln - 1))).Xyz.z in
+    let lvls = if (abs_float (pos.Xyz.zs) > 0.1) then pos.Xyz.zs else (snd acft.Acft.pln.((Array.length acft.Acft.pln - 1))).Xyz.zs in
+    let lvla = acft.Acft.afl in
+    if (lvl <> lvls) then begin
+      if (lvl > lvls) then begin
+	if (abs_float (lvls -. lvla) < 0.1) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↘\nCFL";(string_of_int (Xyz.truncate lvls))]
+	else labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↘\nCFL";(string_of_int (Xyz.truncate lvls));"\nAFL";(string_of_int (Xyz.truncate lvla))]
+      end
+      else begin
+        if (abs_float (lvls -. lvla) < 0.1) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↗\nCFL";(string_of_int (Xyz.truncate lvls))]
+        else labeltext := String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"↗\nCFL";(string_of_int (Xyz.truncate lvls));"\nAFL";(string_of_int (Xyz.truncate lvla))]
+      end
+    end
+    else  begin
+      if (abs_float (lvls -. lvla) < 0.1) then labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl))]
+      else labeltext :=  String.concat "" ["FL";(string_of_int (Xyz.truncate lvl));"\nAFL";(string_of_int (Xyz.truncate lvla))]
+    end;
+        (* Plot *)
+    
     let (x, y as xy) = cv_xy state (Acft.get_pos acft) and d = 5 in
     ignore (Canvas.create_rectangle ~x1:(x-d) ~y1:(y-d) ~x2:(x+d) ~y2:(y+d)
 	      ~outline:color ~tags:tags state.cv);
-    (* Speed vector *)
+(* Speed vector *)
     ignore (Canvas.create_line ~xys:[xy; cv_xy state next_pos]
 	      ~fill:color ~width:2 ~tags:tags state.cv);
-   (* Label *)
-     ignore (Canvas.create_text ~x:(x+10) ~y:(y-10)
-		~text: (!labeltext)
-	    ~fill:scale_color ~anchor:`Nw ~tags:tags state.cv);
+(* Label *)
+    ignore (Canvas.create_text ~x:(x+10) ~y:(y-10)
+	      ~text: (!labeltext)
+	      ~fill:scale_color ~anchor:`Nw ~tags:tags state.cv);
     (* Comet *)
     Array.iteri (fun j xyj ->
       let (x, y) = cv_xy state xyj and d = 4 - j in
       ignore (Canvas.create_oval ~x1:(x-d) ~y1:(y-d) ~x2:(x+d) ~y2:(y+d)
 		~outline:color ~tags:tags state.cv)) (Acft.get_comet acft))
     state.acft
-
+    
 let draw_conf state =
   let draw_segs i j segs =
     let tags = [conf_tag; tag_id conf_tag i; tag_id conf_tag j] in
@@ -174,6 +192,7 @@ let draw_all state =
   let t = state_time state in
   Array.iteri (fun id acft ->
     Acft.update acft t;
+    if (acft.Acft.afl <> (snd acft.Acft.predict.(0)).Xyz.zs) then lvl_edit t acft;
     if state.mode = Dynamic && state.cur = id && state.dev_xy <> [||] then (
       acft.Acft.predict <- Acft.dev acft (t_dev acft) state.dev_xy.(0));
     if Canvas.gettags state.cv (`Tag (tag_id pln_tag id)) = [] then
@@ -190,6 +209,7 @@ let draw_all state =
 (* Interactions ----------------------------------------------------------- *)
 
 let highlight_current state evnt =
+  
   if state.mode <> Show then (
     state.cur <- get_id (Canvas.gettags state.cv (`Tag current_tag));
     Canvas.configure_line ~fill:pln_color state.cv (`Tag pln_tag);
@@ -235,25 +255,49 @@ let apply_edit state evnt =
     draw_all state;
     Canvas.configure_line ~fill:edit_color state.cv tag)
     
+  
 let lvl_edit_up state evnt =
-  if state.mode <> Show && state.cur <> -1 then (
-    Printf.printf "Go up \n%!";
-    let a = state.acft.(state.cur) in
-    let t = state_time state in
-    let pos =  Xyz.bary (a.Acft.pln.(a.Acft.leg)) (a.Acft.pln.(min (a.Acft.leg+1) (Array.length a.Acft.pln - 1))) t in
-    Printf.printf "fl : %f \n%!" pos.Xyz.z;
-    Printf.printf "cfl avant : %f \n%!" pos.Xyz.zs;
-    let cfl = pos.Xyz.zs +. 10. in
-    Printf.printf "cfl après : %f \n%!" cfl;
-    a.Acft.predict <- Acft.dev_lvl a t pos cfl;
-    Acft.apply_dev a;
-    )
-		
+	if state.mode <> Show && state.cur <> -1 then (
+		let t = state_time state in
+		Printf.printf "Going up \n%!";
+		let a = state.acft.(state.cur) in
+		let afl = a.Acft.afl +. 10. in
+		if (afl > 0. && afl < 670.) then (
+			a.Acft.afl <- afl;	
+			lvl_edit t a;
+			draw_conf state
+		)	
+	)
+						  
 let lvl_edit_down state evnt =
-  if state.mode <> Show && state.cur <> -1 then (
-    Printf.printf "Go down \n%!";
-    let a = state.acft.(state.cur) in
-    Printf.printf "500 \n%!")
+	if state.mode <> Show && state.cur <> -1 then (
+		let t = state_time state in
+		Printf.printf "Going down \n%!";
+		let a = state.acft.(state.cur) in
+		let afl = a.Acft.afl -. 10. in
+		if (afl > 0. && afl < 670.) then (
+			a.Acft.afl <- afl;	
+			lvl_edit t a;
+			draw_conf state
+		)
+	)
+	
+let lvl_apply state evnt =
+	if state.mode <> Show && state.cur <> -1 then (
+		let a = state.acft.(state.cur) in
+		let leg = a.Acft.leg in
+		let xyz = (snd a.Acft.pln.(leg)) in
+		Printf.printf "%d %f %f %f %f\n\n" a.Acft.leg xyz.Xyz.x xyz.Xyz.y xyz.Xyz.z xyz.Xyz.zs;
+		let t = state_time state in
+		let pos =  Xyz.bary (a.Acft.pln.(a.Acft.leg)) (a.Acft.pln.(min (a.Acft.leg+1) (Array.length a.Acft.pln - 1))) t in
+		let afl = a.Acft.afl in
+		a.Acft.predict <- Acft.dev_lvl2 a t pos afl;
+		Acft.apply_dev_lvl a;
+		Array.iter (fun (t,xyz) ->
+				Printf.printf "%f %f %f %f %f\n" t xyz.Xyz.x xyz.Xyz.y xyz.Xyz.z xyz.Xyz.zs;
+				) a.Acft.pln
+    )
+    
 
 let cancel_edit state =
   if state.mode <> Show then (
@@ -377,6 +421,7 @@ let main =
   
   bind [`ButtonPressDetail 4] [] (lvl_edit_up state) state.cv;
   bind [`ButtonPressDetail 5] [] (lvl_edit_down state) state.cv;
+  bind [`ButtonPressDetail 2] [] (lvl_apply state) state.cv;
  
   Focus.set state.cv;
 

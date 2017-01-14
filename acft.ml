@@ -30,6 +30,7 @@ mutable pln: pln;                 (* Real flightplan *)
 mutable leg: int;                 (* Current leg in flightplan *)
 mutable predict: pln;             (* Prediction *)
 mutable route: Xyz.point array;   (* Positions every delta sec. *)
+mutable afl: float;
 }
 	
 
@@ -112,6 +113,7 @@ let reset acft =
 	let xys = [|(Xyz.change_alts xyz0 lvl); (Xyz.change_all xyzf lvl lvl)|] in
 	acft.pln <- create_pln acft.speed dspeed t xys;
 	acft.leg <- 0;
+	acft.afl <- xyz0.Xyz.z;
 	acft.predict <- create_pln acft.speed 0. t xys;
 	acft.route <- create_route acft.pln
 
@@ -152,53 +154,80 @@ let nav speed xys =
 
 let dev_lvl acft t_dev xy_dev lvl_dev =
 	let (t, xyt) = acft.predict.(0) in
-	let index_toc = ref 0 in
-	let last = Array.length acft.predict - 1 in
+	let leg = ref acft.leg in
+	let last = Array.length acft.pln - 1 in
 	let deltalvl = lvl_dev -. xyt.Xyz.z in
-	let t_end = t_dev +. deltalvl /. acft.vspeed in
-	while !index_toc < last && fst acft.predict.(!index_toc + 1) <= t_end do incr index_toc done;	
+	let t_end = t_dev +. (abs_float deltalvl) /. acft.vspeed in
+	while !leg < last && fst acft.pln.(!leg + 1) <= t_dev do incr leg done;
+	let index_toc = ref !leg in
+	while !index_toc < last && fst acft.pln.(!index_toc + 1) <= t_end do incr index_toc done;	
 	let p_start = Xyz.change_alts xy_dev lvl_dev in
 	let list = ref [] in
 	let next = ref [||] in
 	let middle = ref [||] in
-
+	Printf.printf "leg : %d, index_toc : %d\n" !leg !index_toc;
 	if (!index_toc > 0) then (
-		middle := Array.init (!index_toc) (fun j -> 
-						  let lastZ = ref 0. in
-						  let lastT = ref 0. in
-						  if (j = 0) then (
-								lastZ := p_start.Xyz.z;
-								lastT := t_dev
-						  )
-						  else (
-								lastZ := (snd acft.predict.(j)).Xyz.z;
-								lastT := fst acft.predict.(j)
-						  );
-						  let current = acft.predict.(1+j) in
-						  let deltat = (fst current) -. !lastT in
-					      Xyz.change_alts (Xyz.change_alt (snd current) (!lastZ +. deltat *. acft.vspeed)) lvl_dev
-					      )
-					   );
+	  middle := Array.init (!index_toc - !leg +1) (fun j -> 
+					     let lastZ = ref 0. in
+					     let lastT = ref 0. in
+					     if (j = 0) then (
+					       lastZ := p_start.Xyz.z;
+					       lastT := t_dev
+					     )
+					     else (
+					       lastZ := (snd acft.pln.(!leg +j)).Xyz.z;
+					       lastT := fst acft.pln.(!leg +j)
+					     );
+					     let current = acft.pln.(!leg+1+j) in
+					     let deltat = (fst current) -. !lastT in
+					     let sign = if (deltalvl >= 0.) then 1. else -.1. in
+					     Xyz.change_alts (Xyz.change_alt (snd current) (!lastZ +. sign *. deltat *. acft.vspeed)) lvl_dev
+					    )
+	);
 	if (last > !index_toc) then (	
-				let p_end = Xyz.change_alts (Xyz.change_alt (Xyz.bary (acft.pln.(!index_toc)) (acft.pln.(!index_toc+1)) t_end) lvl_dev) lvl_dev in
-				next := Array.init (last - !index_toc) (fun j -> 
-						  let current = acft.predict.(!index_toc+1+j) in
-					      Xyz.change_alts (Xyz.change_alt (snd current) lvl_dev) lvl_dev
-					      );
-				list := [[|p_start|]; !middle; [|p_end|]; !next]
+	  let p_end = Xyz.change_alts (Xyz.change_alt (Xyz.bary (acft.pln.(!index_toc)) (acft.pln.(!index_toc+1)) t_end) lvl_dev) lvl_dev in
+	  next := Array.init (last - !index_toc) (fun j -> 
+						  let current = acft.pln.(!index_toc+1+j) in
+						  Xyz.change_alts (Xyz.change_alt (snd current) lvl_dev) lvl_dev
+						 );
+	  list := [[|p_start|]; !middle; [|p_end|]; !next]
 	)
 	else (
-		list := [[|p_start|]; !middle]	
-		);
+	  list := [[|p_start|]; !middle]	
+	);
 	let pln = create_pln acft.speed 0. t (Array.concat !list) in
-	Printf.printf "pln : \n";
-	Array.iter (fun xyz -> 
-			Printf.printf "%f %f %f %f\n" xyz.Xyz.x xyz.Xyz.y xyz.Xyz.z xyz.Xyz.zs;
-			) (Array.concat !list);
-	Printf.printf "fin pln\n";
 	pln
 
-
+let dev_lvl2 acft t_dev xy_dev lvl_dev =
+	let (t, xyt) = acft.predict.(0) in
+	let leg = ref acft.leg in
+	let last_index = Array.length acft.pln - 1 in
+	let last = acft.pln.(last_index) in
+	let deltalvl = lvl_dev -. xyt.Xyz.z in
+	let t_end = t_dev +. (abs_float deltalvl) /. acft.vspeed in
+	if (t_end > fst last) then begin
+		let middle = Array.init (last_index - !leg) (fun j ->
+						let (tc, xyzc) = acft.pln.(!leg+1+j) in
+						let lvl_value = xyt.Xyz.z +.(deltalvl)*.(t_end -. tc)/.(t_end -. t_dev) in
+						let new_xyzc = Xyz.change_all xyzc lvl_value lvl_dev in
+						(tc,new_xyzc)
+		) in
+		Array.append [|(t_dev, Xyz.change_alts xy_dev lvl_dev) |] middle
+	end
+	else begin 
+		while (fst acft.pln.(!leg+1) < t_end) do incr leg done; 
+		let middle = Array.init (!leg - acft.leg) (fun j ->
+						let (tc, xyzc) = acft.pln.(acft.leg+1+j) in
+						let lvl_value = xyt.Xyz.z +.(deltalvl)*.(t_end -. tc)/.(t_end -. t_dev) in
+						let new_xyzc = Xyz.change_all xyzc lvl_value lvl_dev in
+						(tc,new_xyzc))in
+		let p_end = (t_end, Xyz.change_alts (Xyz.change_alt (Xyz.bary (acft.pln.(!leg)) (acft.pln.(!leg+1)) t_end) lvl_dev) lvl_dev) in
+		let next = Array.init (last_index - !leg) (fun j ->
+						let (tc, xyzc) = acft.pln.(!leg+1+j) in
+						let new_xyzc = Xyz.change_all xyzc lvl_dev lvl_dev in
+						(tc,new_xyzc)) in
+		Array.concat [[|(t_dev, Xyz.change_alts xy_dev lvl_dev) |]; middle; [|p_end|];next]
+	end
 	
 let dev acft t_dev xy_dev =
 	let (t, xyt) = acft.predict.(0) in
@@ -256,13 +285,10 @@ let apply_dev acft =
 
 let apply_dev_lvl acft =
 	let xys = Array.map snd acft.predict in
-	if fst acft.predict.(0) < fst acft.pln.(0) then (
-		xys.(0) <- snd acft.pln.(0);
-		acft.pln <- create_pln acft.speed dspeed (fst acft.pln.(0)) xys)
-	else (
-		let next = create_pln acft.speed dspeed (fst acft.predict.(0)) xys in
-		acft.pln <- Array.concat [Array.sub acft.pln 0 (acft.leg); next]);
-	acft.route <- create_route acft.pln	
+	let next = create_pln acft.speed dspeed (fst acft.predict.(0)) xys in	
+	acft.pln <- Array.concat [Array.sub acft.pln 0 (acft.leg+1); next];
+	acft.route <- create_route acft.pln;
+	acft.leg <- acft.leg + 1
 	  
 let delay acft =
 	let l = Array.length acft.pln in
@@ -400,7 +426,7 @@ let random_acft alpha =
 	(* let t = 0. in *)
 	let pln = create_pln speed dspeed t xys in
 	let route = create_route pln in
-	let a = {speed=speed; vspeed = vertical_speed; pln=pln; leg=0; predict=[||]; route=route;} in
+	let a = {speed=speed; vspeed = vertical_speed; pln=pln; leg=0; predict=[||]; route=route;afl=randomalt;} in
 	update a 0.;
 	a in
 let rec first_conf_t a i j =
@@ -415,9 +441,4 @@ Array.iteri (fun i _ ->
 		 while first_conf_t acft 0 i < fst acft.(i).pln.(0) +. min_conf_t do
 		 acft.(i) <- random_acft alpha.(i)
 		 done) acft;
-
-let t0 = (fst acft.(0).pln.(0)) in
-let z0 = (snd acft.(0).pln.(0)).Xyz.z in
-(*acft.(0).predict <- dev_lvl acft.(0) (t0 +. 1.) (Xyz.bary (acft.(0).pln.(0)) (acft.(0).pln.(1)) (t0 +. 1.)) (z0 +. 20.);
-apply_dev acft.(0);*)
 acft
