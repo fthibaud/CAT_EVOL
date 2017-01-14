@@ -152,53 +152,9 @@ let nav speed xys =
     | l -> l in
 	get (Xyz.angle (Xyz.sub (List.nth xys 1) (List.hd xys))) xys
 
-let dev_lvl acft t_dev xy_dev lvl_dev =
-	let (t, xyt) = acft.predict.(0) in
-	let leg = ref acft.leg in
-	let last = Array.length acft.pln - 1 in
-	let deltalvl = lvl_dev -. xyt.Xyz.z in
-	let t_end = t_dev +. (abs_float deltalvl) /. acft.vspeed in
-	while !leg < last && fst acft.pln.(!leg + 1) <= t_dev do incr leg done;
-	let index_toc = ref !leg in
-	while !index_toc < last && fst acft.pln.(!index_toc + 1) <= t_end do incr index_toc done;	
-	let p_start = Xyz.change_alts xy_dev lvl_dev in
-	let list = ref [] in
-	let next = ref [||] in
-	let middle = ref [||] in
-	Printf.printf "leg : %d, index_toc : %d\n" !leg !index_toc;
-	if (!index_toc > 0) then (
-	  middle := Array.init (!index_toc - !leg +1) (fun j -> 
-					     let lastZ = ref 0. in
-					     let lastT = ref 0. in
-					     if (j = 0) then (
-					       lastZ := p_start.Xyz.z;
-					       lastT := t_dev
-					     )
-					     else (
-					       lastZ := (snd acft.pln.(!leg +j)).Xyz.z;
-					       lastT := fst acft.pln.(!leg +j)
-					     );
-					     let current = acft.pln.(!leg+1+j) in
-					     let deltat = (fst current) -. !lastT in
-					     let sign = if (deltalvl >= 0.) then 1. else -.1. in
-					     Xyz.change_alts (Xyz.change_alt (snd current) (!lastZ +. sign *. deltat *. acft.vspeed)) lvl_dev
-					    )
-	);
-	if (last > !index_toc) then (	
-	  let p_end = Xyz.change_alts (Xyz.change_alt (Xyz.bary (acft.pln.(!index_toc)) (acft.pln.(!index_toc+1)) t_end) lvl_dev) lvl_dev in
-	  next := Array.init (last - !index_toc) (fun j -> 
-						  let current = acft.pln.(!index_toc+1+j) in
-						  Xyz.change_alts (Xyz.change_alt (snd current) lvl_dev) lvl_dev
-						 );
-	  list := [[|p_start|]; !middle; [|p_end|]; !next]
-	)
-	else (
-	  list := [[|p_start|]; !middle]	
-	);
-	let pln = create_pln acft.speed 0. t (Array.concat !list) in
-	pln
 
-let dev_lvl2 acft t_dev xy_dev lvl_dev =
+
+let dev_lvl acft t_dev xy_dev lvl_dev =
 	let (t, xyt) = acft.predict.(0) in
 	let leg = ref acft.leg in
 	let last_index = Array.length acft.pln - 1 in
@@ -442,12 +398,4 @@ Array.iteri (fun i _ ->
 		 while first_conf_t acft 0 i < fst acft.(i).pln.(0) +. min_conf_t do
 		 acft.(i) <- random_acft alpha.(i)
 		 done) acft;
-<<<<<<< HEAD
-=======
-
-let t0 = (fst acft.(0).pln.(0)) in
-let z0 = (snd acft.(0).pln.(0)).Xyz.z in
-(*acft.(0).predict <- dev_lvl acft.(0) (t0 +. 1.) (Xyz.bary (acft.(0).pln.(0)) (acft.(0).pln.(1)) (t0 +. 1.)) (z0 +. 20.);
-apply_dev acft.(0);*)
->>>>>>> b60e5c0796d4e63a9c23b9177223f2bdc1dfc266
 acft

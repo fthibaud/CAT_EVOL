@@ -64,7 +64,7 @@ let new_state state n =
 let lvl_edit t a =
 	let pos =  Xyz.bary (a.Acft.pln.(a.Acft.leg)) (a.Acft.pln.(min (a.Acft.leg+1) (Array.length a.Acft.pln - 1))) t in
 	let afl = a.Acft.afl in
-	let dev = Acft.dev_lvl2 a t pos afl in
+	let dev = Acft.dev_lvl a t pos afl in
 	a.Acft.predict <- dev
 
 (* Drawings ---------------------------------------------------------------- *)
@@ -291,7 +291,7 @@ let lvl_apply state evnt =
 		let t = state_time state in
 		let pos =  Xyz.bary (a.Acft.pln.(a.Acft.leg)) (a.Acft.pln.(min (a.Acft.leg+1) (Array.length a.Acft.pln - 1))) t in
 		let afl = a.Acft.afl in
-		a.Acft.predict <- Acft.dev_lvl2 a t pos afl;
+		a.Acft.predict <- Acft.dev_lvl a t pos afl;
 		Acft.apply_dev_lvl a;
 		Array.iter (fun (t,xyz) ->
 				Printf.printf "%f %f %f %f %f\n" t xyz.Xyz.x xyz.Xyz.y xyz.Xyz.z xyz.Xyz.zs;
