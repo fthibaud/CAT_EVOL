@@ -289,6 +289,7 @@ let apply_dev_lvl acft =
 	acft.pln <- Array.concat [Array.sub acft.pln 0 (acft.leg+1); next];
 	acft.route <- create_route acft.pln;
 	acft.leg <- acft.leg + 1
+
 	  
 let delay acft =
 	let l = Array.length acft.pln in
@@ -441,4 +442,12 @@ Array.iteri (fun i _ ->
 		 while first_conf_t acft 0 i < fst acft.(i).pln.(0) +. min_conf_t do
 		 acft.(i) <- random_acft alpha.(i)
 		 done) acft;
+<<<<<<< HEAD
+=======
+
+let t0 = (fst acft.(0).pln.(0)) in
+let z0 = (snd acft.(0).pln.(0)).Xyz.z in
+(*acft.(0).predict <- dev_lvl acft.(0) (t0 +. 1.) (Xyz.bary (acft.(0).pln.(0)) (acft.(0).pln.(1)) (t0 +. 1.)) (z0 +. 20.);
+apply_dev acft.(0);*)
+>>>>>>> b60e5c0796d4e63a9c23b9177223f2bdc1dfc266
 acft
