@@ -360,6 +360,10 @@ let back state evnt =
   state.start_t <- state.start_t +. Acft.delta;
   draw_all state
   
+let next state evnt =
+  state.start_t <- state.start_t -. Acft.delta;
+  draw_all state
+  
 let forward state evnt =
   state.start_t <- state.start_t -. Acft.delta;
   draw_all state
@@ -411,6 +415,7 @@ let main =
   let mouse_xy = [`MouseX; `MouseY] in
   bind [`KeyPressDetail "q"] [] (fun _ -> Tk.closeTk ()) state.cv;
   bind [`KeyPressDetail "b"] [] (fun _ -> back state ()) state.cv;
+  bind [`KeyPressDetail "n"] [] (fun _ -> next state ()) state.cv;
   bind [`Motion] [] (highlight_current state) state.cv;
   bind [`ButtonPressDetail 1] mouse_xy (drag_edit state) state.cv;
   bind [`Modified ([`Button1], `Motion)] mouse_xy (drag_edit state) state.cv;
