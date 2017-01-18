@@ -5,6 +5,14 @@ let scale = 10.          (* Initial scale (pixels / Nm) *)
 let size = 600.          (* Initial window size (pixels) *)
 let mode = 2             (* Initial mode: Basic, Static, Dynamic *)
 
+let waypoints = Hashtbl.create 7;;
+Hashtbl.replace waypoints "TOU1" (1.,1.,true);
+Hashtbl.replace waypoints "TOU2" (1.,1.,true);
+Hashtbl.replace waypoints "TOU3" (1.,1.,true);
+Hashtbl.replace waypoints "TOU4" (1.,1.,true);
+Hashtbl.replace waypoints "TOU5" (1.,1.,false);
+Hashtbl.replace waypoints "TOU6" (1.,1.,false);
+Hashtbl.replace waypoints "TOU7" (1.,1.,false);;
 
 let hour = 3600.
 
