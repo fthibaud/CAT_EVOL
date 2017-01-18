@@ -352,16 +352,13 @@ let redo state () =
   draw_all state;
   loop state (reset state) ()
 
-let scroll state evnt =
-  state.start_t <- state.start_t -. Acft.delta /.2.;
-  draw_all state
-
+let scroll num state evnt =
+	if  state.cur  = -1 then (
+		state.start_t <- state.start_t -. num *. Acft.delta /.2.;
+		draw_all state
+	)
 let back state evnt =
   state.start_t <- state.start_t +. Acft.delta;
-  draw_all state
-  
-let next state evnt =
-  state.start_t <- state.start_t -. Acft.delta;
   draw_all state
   
 let forward state evnt =
@@ -414,14 +411,15 @@ let main =
     Tk.bind ~events:events ~fields:fields ~action:action w in
   let mouse_xy = [`MouseX; `MouseY] in
   bind [`KeyPressDetail "q"] [] (fun _ -> Tk.closeTk ()) state.cv;
+  bind [`KeyPressDetail "n"] [] (fun _ -> forward state ()) state.cv;
   bind [`KeyPressDetail "b"] [] (fun _ -> back state ()) state.cv;
-  bind [`KeyPressDetail "n"] [] (fun _ -> next state ()) state.cv;
   bind [`Motion] [] (highlight_current state) state.cv;
   bind [`ButtonPressDetail 1] mouse_xy (drag_edit state) state.cv;
   bind [`Modified ([`Button1], `Motion)] mouse_xy (drag_edit state) state.cv;
   bind [`ButtonReleaseDetail 1] [] (apply_edit state) state.cv;
   bind [`ButtonPressDetail 3] [] (fun _ -> cancel_edit state) state.cv;
-  (*bind [`ButtonPressDetail 5] [] (scroll state) top;*)
+  bind [`ButtonPressDetail 5] [] (scroll 1. state) top;
+  bind [`ButtonPressDetail 4] [] (scroll (-.1.) state) top;
   bind [`KeyPressDetail "f"] [] (fun _ -> forward state ()) state.cv;
   
   bind [`ButtonPressDetail 4] [] (lvl_edit_up state) state.cv;
