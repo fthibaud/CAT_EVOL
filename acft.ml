@@ -10,7 +10,7 @@ let std_turn = 120.      (* time for a full standard round (sec) *)
 let max_turn = 15.       (* max turn (deg) *)
 let sep = 5.           (* minimal vertical separation (Nm) *)
 let hsep = 9.          (* minimal vertical separation (Nm) *)
-let max_start_t = 30.    (* maximam start time (sec) *)
+let max_start_t = 30.    (* maximal start time (sec) *)
 let min_conf_t = 30.     (* minimal time of first conflict *)
 
 let hour = 3600.
