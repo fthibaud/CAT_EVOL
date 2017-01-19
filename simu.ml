@@ -194,14 +194,14 @@ let draw_all state =
     Acft.update acft t;
     if (acft.Acft.afl <> (snd acft.Acft.predict.(0)).Xyz.zs) then lvl_edit t acft;
     if state.mode = Dynamic && state.cur = id && state.dev_xy <> [||] then (
-      acft.Acft.predict <- Acft.dev acft (t_dev acft) state.dev_xy.(0));
+      acft.Acft.predict <- Acft.dev2 acft (t_dev acft) state.dev_xy.(0));
     if Canvas.gettags state.cv (`Tag (tag_id pln_tag id)) = [] then
       draw_pln state id) state.acft;
   draw_acft state;
   if state.mode <> Show then (
     if state.cur <> -1 && state.dev_xy <> [||] then (
       let a = state.acft.(state.cur) in
-      let dev = Acft.dev a (t_dev a) state.dev_xy.(0) in
+      let dev = Acft.dev2 a (t_dev a) state.dev_xy.(0) in
       draw_dev state dev;
       if state.mode = Dynamic then state.acft.(state.cur).Acft.predict <- dev);
     if state.mode <> Basic then draw_conf state)
@@ -230,7 +230,7 @@ let drag_edit state evnt =
 	Canvas.configure_line ~fill:pln_color state.cv (`Tag pln_tag));
       let mouse_xy = (evnt.Tk.ev_MouseX, evnt.Tk.ev_MouseY) in
       state.dev_xy <- [|world_xy state mouse_xy|];
-      let dev = Acft.dev a (t_dev a) state.dev_xy.(0) in
+      let dev = Acft.dev2 a (t_dev a) state.dev_xy.(0) in
       draw_dev state dev;
       if state.mode = Dynamic then (
 	a.Acft.predict <- dev;
@@ -244,7 +244,7 @@ let drag_edit state evnt =
 let apply_edit state evnt =
   if state.mode <> Show && state.cur <> -1 && state.dev_xy <> [||] then (
     let a = state.acft.(state.cur) in
-    a.Acft.predict <- Acft.dev a (t_dev a) state.dev_xy.(0);
+    a.Acft.predict <- Acft.dev2 a (t_dev a) state.dev_xy.(0);
     Acft.apply_dev a;
     state.dev_xy <- [||];
     let dt = Array.fold_left (fun dt acft -> 
