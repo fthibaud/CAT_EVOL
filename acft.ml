@@ -9,7 +9,7 @@ let alpha = 5.           (* turn angle discretisation (deg) *)
 let std_turn = 120.      (* time for a full standard round (sec) *)
 let max_turn = 15.       (* max turn (deg) *)
 let sep = 5.           (* minimal vertical separation (Nm) *)
-let hsep = 9.          (* minimal vertical separation (Nm) *)
+let hsep = 9.99          (* minimal vertical separation (Nm) *)
 let max_start_t = 30.    (* maximam start time (sec) *)
 let min_conf_t = 30.     (* minimal time of first conflict *)
 
@@ -226,6 +226,86 @@ let dev acft t_dev xy_dev =
 		!next2
 	)
 	else predict
+
+let balise_return p1 pdev next_balises =
+	let i = ref 0 in
+	let anglei = ref (Xyz.angle2 p1 pdev next_balises.(!i)) in
+	let len = Array.length next_balises - 1 in
+	while (!anglei < 90. && !i<len) do (
+		i := !i + 1;
+		anglei := Xyz.angle2 p1 pdev next_balises.(!i)
+	)
+	done;
+	!i
+
+let dev2 acft t_dev xy_dev =
+	let (t, xyt) = acft.predict.(0) in
+	let leg = ref (acft.leg) and last = Array.length acft.pln - 2 in
+	while !leg < last && fst acft.pln.(!leg + 1) <= t_dev do incr leg done;
+	
+	let first = Array.init (!leg - acft.leg) (fun j -> 
+					      snd acft.pln.(acft.leg + j)) in
+	if acft.leg < !leg then first.(0) <- xyt;
+	
+	let xy0 = if !leg = acft.leg then xyt else snd acft.pln.(!leg) in
+	let xyd = Xyz.bary acft.pln.(!leg) acft.pln.(!leg + 1) t_dev in
+	let xye = snd acft.pln.(last + 1) in
+	
+	let balises = Array.init (last + 1 - !leg) (fun j -> 
+					      snd acft.pln.(!leg + j)) in
+	Array.iter (fun p ->
+				Printf.printf "first : %f, %f\n" p.Xyz.x p.Xyz.y
+				) first;
+	
+	
+	Array.iter (fun p ->
+				Printf.printf " balises : %f, %f\n" p.Xyz.x p.Xyz.y
+				) balises;
+	Printf.printf "\n";		
+	let index = balise_return xyd xy_dev balises in
+	let predict = ref [||] in
+	if (index = last - !leg) then 
+		begin
+			let next = Array.of_list (nav acft.speed [xy0; xyd; xy_dev; xye]) in
+			predict := create_pln acft.speed 0. t (Array.append first next)
+		end
+	else 
+		begin
+			let next = Array.init (last - 1 - index) (fun j -> 
+					      snd acft.pln.(index + 3 + j)) in
+			let middle = Array.of_list (nav acft.speed [xy0; xyd; xy_dev; balises.(index); balises.(index+1)]) in
+			predict := create_pln acft.speed 0. t (Array.concat [first;middle;next]);
+		end;
+	
+	let target = xyd.Xyz.zs in
+	let deltah = float_of_int(abs (int_of_float (xyd.Xyz.z -. target))) in
+	if deltah <> 0. then (
+		let deltat = deltah /. acft.vspeed in
+		let t_target = t_dev +. deltat in
+		let next2 = ref [||] in
+		let ptoc = ref true in
+		Array.iteri (fun i (t,xyz) ->
+				if i = 0 then next2 := Array.append !next2 [|(t,xyz)|]
+				else (
+					let (tlast,last) = !next2.(i-1) in
+					if (t < t_target) then (
+						let xyz2 = Xyz.change_all xyz (last.Xyz.z +. acft.vspeed *. (t-.tlast)) target in
+						next2 := Array.append !next2 [|(t,xyz2)|]
+					)
+					else (
+					if !ptoc then (
+						let toc = Xyz.change_all (Xyz.bary (tlast,last) (t,xyz) t_target) target target in
+						next2 := Array.append !next2 [|(t_target,toc)|];
+						ptoc := false
+						);
+					let xyz2 = Xyz.change_all xyz target target in
+						next2 := Array.append !next2 [|(t,xyz2)|]
+					);
+			);
+		) !predict;
+		!next2
+	)
+	else !predict
 
 
 
