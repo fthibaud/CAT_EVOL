@@ -1,4 +1,4 @@
-SOURCES = xy.ml acft.ml simu.ml
+SOURCES = xyz.ml acft.ml simu.ml
 INCLUDES = -I +labltk
 LIBS = labltk.cma unix.cma
 TARGET = simu
