@@ -6,13 +6,13 @@ let size = 600.          (* Initial window size (pixels) *)
 let mode = 2             (* Initial mode: Basic, Static, Dynamic *)
 
 let waypoints = Hashtbl.create 7;;
-Hashtbl.replace waypoints "TOU1" (1.,1.,true);
-Hashtbl.replace waypoints "TOU2" (1.,1.,true);
-Hashtbl.replace waypoints "TOU3" (1.,1.,true);
-Hashtbl.replace waypoints "TOU4" (1.,1.,true);
-Hashtbl.replace waypoints "TOU5" (1.,1.,false);
-Hashtbl.replace waypoints "TOU6" (1.,1.,false);
-Hashtbl.replace waypoints "TOU7" (1.,1.,false);;
+Hashtbl.replace waypoints "TOU1" (Xyz.{x=(-.22.); y=(-.23.); z=0.;zs=0.},false);
+Hashtbl.replace waypoints "TOU2" (Xyz.{x=21.; y=(-.19.); z=0.;zs=0.},false);
+Hashtbl.replace waypoints "TOU3" (Xyz.{x=20.; y=24.; z=0.;zs=0.},false);
+Hashtbl.replace waypoints "TOU4" (Xyz.{x=(-.26.); y=20.; z=0.;zs=0.},false);
+Hashtbl.replace waypoints "TOU5" (Xyz.{x=(-.9.); y=(-.2.); z=0.;zs=0.},true);
+Hashtbl.replace waypoints "TOU6" (Xyz.{x=2.; y=(-.9.); z=0.;zs=0.},true);
+Hashtbl.replace waypoints "TOU7" (Xyz.{x=0.5; y=15.; z=0.;zs=0.},true);;
 
 let hour = 3600.
 
@@ -31,6 +31,7 @@ let pln_tag = "PLN"
 let edit_tag = "Edit"
 let conf_tag = "Conflict"
 let current_tag = "current"
+let wp_tag = "Waypoints"
 
 let round a = truncate (floor (a +. 0.5))
 
@@ -106,6 +107,20 @@ let draw_scale state =
   ignore (Canvas.create_text ~x:20 ~y:20 
 	    ~text:(Printf.sprintf "%.0fNm" Acft.sep)
 	    ~fill:scale_color ~anchor:`Nw ~tags:[scale_tag] state.cv)
+
+let draw_waypoints state waypoints =
+  Canvas.delete state.cv [`Tag wp_tag];
+  let draw_waypoint name (xyz,sector) =
+    let (x, y) = cv_xy state xyz in
+    let color = if sector then scale_color else pln_color in
+    ignore (Canvas.create_text ~x:x ~y:y
+        ~text:(Printf.sprintf "▲")
+        ~fill:color ~tags:[wp_tag] state.cv);
+    ignore (Canvas.create_text ~x:(x) ~y:(y+20)
+        ~text:(Printf.sprintf "%s" name)
+	      ~fill:color ~tags:[wp_tag] state.cv)
+  in
+  Hashtbl.iter draw_waypoint waypoints
 
 let draw_pln state id =
   let pln = state.acft.(id).Acft.pln in
@@ -195,7 +210,7 @@ let draw_conf state =
     Canvas.raise state.cv items)
 
 let draw_all state =
-  if Canvas.gettags state.cv (`Tag scale_tag) = [] then draw_scale state;
+  if Canvas.gettags state.cv (`Tag scale_tag) = [] then begin draw_scale state; draw_waypoints state waypoints end;
   if state.mode = Basic then Canvas.delete state.cv [`Tag conf_tag];
   let t = state_time state in
   Array.iteri (fun id acft ->
