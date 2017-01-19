@@ -55,6 +55,12 @@ let degrees = 180. /. pi (* rate to convert radians into degrees *)
 (* Arctan of y/x, gives theta angle for polar conversion Oxy*)
 let angle p = atan2 p.y p.x
 
+let angle2 p1 p2 p3= 
+	let pa = sub p2 p1 in
+	let pb = sub p3 p2 in
+	degrees *. (acos (-.(sca pa pb) /. (norm pa *. norm pb)))
+	
+
 (*Polar coordinates*)
 let polar a = (cos a, sin a)
 
