@@ -245,9 +245,12 @@ let dev2 acft t_dev xy_dev =
 	if acft.leg < !leg then first.(0) <- xyt;
 	let xy0 = if !leg = acft.leg then xyt else snd acft.pln.(!leg) in
 	let xyd = Xyz.bary acft.pln.(!leg) acft.pln.(!leg + 1) t_dev in
-	let fpl = Array.of_list acft.fpl in
-	
-	let balises = Array.init (List.length acft.fpl) (fun i -> fpl.(i)) in
+	let fpl = ref [] in
+	List.iter (fun el -> 
+			if (Xyz.sca (Xyz.sub xy0 el) (Xyz.sub xy0 xyd)) > 0. then
+				fpl := List.append !fpl [el]
+				) acft.fpl; 
+	let balises = Array.init (List.length !fpl) (fun i -> (Array.of_list!fpl).(i)) in
 	let index = balise_return xyd xy_dev balises in
 	let list = [xy0; xyd; xy_dev; balises.(index)] in
 	
